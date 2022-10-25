@@ -31,7 +31,7 @@ func getConfig() *sentinelone.Configuration {
 
 func main() {
 	client := sentinelone.NewAPIClient(getConfig())
-    // ...
+    	// ...
 }
 ```
  Note that we pipe the API token into the config using an environment variable, so if you configure your client like this, you must run the following before running any code.
