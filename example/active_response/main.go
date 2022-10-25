@@ -90,7 +90,7 @@ func getConfig() *sentinelone.Configuration {
 	}
 	cfg := sentinelone.NewConfiguration()
 	cfg.Host = "usea1-partners.sentinelone.net"
-	cfg.UserAgent = "ArcticWolf"
+	cfg.UserAgent = "Arctic-Wolf/1.0"
 	cfg.Scheme = "https"
 	cfg.AddDefaultHeader("Authorization", fmt.Sprintf("APIToken %s", token))
 	return cfg
