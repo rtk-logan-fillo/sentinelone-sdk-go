@@ -1,7 +1,7 @@
 # SentinelOne SDK for Go
 This project is an unoffical SentinelOne SDK for Go. It is based off of the swagger schema `./schema/sentinelone_original.json` which was sneakily acquired through SentinelOne's management console. This schema was then very heavily doctored into `./schema/sentinelone.yaml` which can be used to generate a Go client using `openapi-generate`. The new schema includes only the endpoints required at the moment, but can be extended by carefully copying over attributes from `./schema/sentinelone_original.yaml`.
 ## Getting Started
-### Token
+### Authentication
 You need an API token to make calls to S1. You can get an API Token by going to the S1 dashboard and clicking in the top right corner: `<YOUR_NAME> (Admin) > My User > Options > Generate API Token`. Remember to save the token locally.
 ### Installing 
 To install the SDK client, install it with `go get`. Note that we are installing the internal generated package and not the meta package in which this document exists.
