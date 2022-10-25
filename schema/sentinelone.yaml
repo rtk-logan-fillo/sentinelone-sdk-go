@@ -1,0 +1,4976 @@
+swagger: '2.0'
+info:
+  title: S1 MGMT API
+  description: >-
+    SentinelOne Management Console API specification.
+
+    Changes made to original schema (saved as sentinelone_original.json)
+    - Converted to yaml and intially removed all paths, definitions, and tags
+    - Added security definition APIToken
+    - Added global security APIToken
+    - Added tags Agents, Agent Actions
+    - Added /agents path and required definitions
+    - Added /agents/actions/disconnect and required definitions
+    - Added /agents/actions/connect and required definitions
+    - Added operation id for all paths (for more readable generation)
+    - Removed minimum value attribute if value is of type string (to prevents validation warnings)
+    - Removed firstFullModeTime parameter in GetAgents (breaks generation due to malformed datetime serverside)
+  version: '2.1'
+
+securityDefinitions:
+   # header should look like: 'Authorization: APIToken <APIToken>' "
+   APIToken:
+     type: apiKey
+     in: header
+     name: Authorization
+
+security:
+  - APIToken: []
+
+tags:
+  - name: Agents
+    description: Agent views and operations
+  - name: Agent Actions
+    description: Bulk actions to apply on agents
+
+definitions:
+  _NoDataSchema_400:
+    type: object
+    properties:
+      errors:
+        description: A list of encountered errors
+        type: array
+        items:
+          type: object
+          properties:
+            code:
+              type: integer
+              format: int32
+              description: Error code
+              example: 400010
+            detail:
+              type: string
+              x-nullable: true
+              description: Error detailed description
+              example: Failed to process input parameter. String cannot contain spaces.
+            title:
+              type: string
+              description: Error general description
+              example: Bad parameter given
+            params:
+              type: object
+              description: Extra data that are sent within the error
+              example:
+                token: aefaef1232123aeefAasdasasdasdewre245234234fdsccv.==
+          required:
+            - code
+            - detail
+            - title
+  _NoDataSchema_401:
+    type: object
+    properties:
+      errors:
+        description: A list of encountered errors
+        type: array
+        items:
+          type: object
+          properties:
+            code:
+              type: integer
+              format: int32
+              description: Error code
+              example: 400010
+            detail:
+              type: string
+              x-nullable: true
+              description: Error detailed description
+              example: Failed to process input parameter. String cannot contain spaces.
+            title:
+              type: string
+              description: Error general description
+              example: Bad parameter given
+            params:
+              type: object
+              description: Extra data that are sent within the error
+              example:
+                token: aefaef1232123aeefAasdasasdasdewre245234234fdsccv.==
+          required:
+            - code
+            - detail
+            - title
+  _NoDataSchema_403:
+    type: object
+    properties:
+      errors:
+        description: A list of encountered errors
+        type: array
+        items:
+          type: object
+          properties:
+            code:
+              type: integer
+              format: int32
+              description: Error code
+              example: 400010
+            detail:
+              type: string
+              x-nullable: true
+              description: Error detailed description
+              example: Failed to process input parameter. String cannot contain spaces.
+            title:
+              type: string
+              description: Error general description
+              example: Bad parameter given
+            params:
+              type: object
+              description: Extra data that are sent within the error
+              example:
+                token: aefaef1232123aeefAasdasasdasdewre245234234fdsccv.==
+          required:
+            - code
+            - detail
+            - title
+  _AffectedResultsSchema_200:
+    type: object
+    properties:
+      errors:
+        type: array
+        x-nullable: true
+        example: null
+        description: Errors
+        items:
+          type: object
+      data:
+        description: Response data
+        type: object
+        properties:
+          affected:
+            type: integer
+            format: int32
+            description: Number of entities affected by the requested operation
+  agents.schemas_AgentViewSchema_many_200:
+    type: object
+    properties:
+      errors:
+        type: array
+        x-nullable: true
+        example: null
+        description: Errors
+        items:
+          type: object
+      data:
+        description: Response data
+        type: array
+        items:
+          type: object
+          properties:
+            siteId:
+              type: string
+              description: A reference to the containing site
+              example: '225494730938493804'
+            storageName:
+              type: string
+              description: Storage Name
+            id:
+              type: string
+              description: Agent ID
+              example: '225494730938493804'
+            accountName:
+              type: string
+              description: Name of the containing account
+            allowRemoteShell:
+              type: boolean
+              description: Agent is capable and policy enabled for remote shell
+            consoleMigrationStatus:
+              type: string
+              description: >-
+                What step the agent is at in the process of migrating to another
+                console, if any
+              example: N/A
+              enum:
+                - N/A
+                - Pending
+                - Migrated
+                - Failed
+            lastIpToMgmt:
+              type: string
+              description: The last ip used to connect to the Management console
+            userActionsNeeded:
+              type: array
+              description: >-
+                A list of pending user actions. List items possible values:
+                "none, reboot_needed, user_action_needed, upgrade_needed,
+                incompatible_os, unprotected, user_action_needed_fda,
+                user_action_needed_rs_fda, user_action_needed_network,
+                rebootless_without_dynamic_detection,
+                extended_exclusions_partially_accepted,
+                user_action_needed_bluetooth_per".
+              items:
+                type: string
+                example: none
+                enum:
+                  - none
+                  - reboot_needed
+                  - user_action_needed
+                  - upgrade_needed
+                  - incompatible_os
+                  - unprotected
+                  - user_action_needed_fda
+                  - user_action_needed_rs_fda
+                  - user_action_needed_network
+                  - rebootless_without_dynamic_detection
+                  - extended_exclusions_partially_accepted
+                  - user_action_needed_bluetooth_per
+            encryptedApplications:
+              type: boolean
+              description: Disk encryption status
+            isPendingUninstall:
+              type: boolean
+              description: Agent with a pending uninstall request
+            isUpToDate:
+              type: boolean
+              description: Indicates if the agent version is up to date
+            domain:
+              type: string
+              description: Network domain
+              example: mybusiness.net
+            computerName:
+              type: string
+              example: JOHN-WIN-4125
+              description: Computer name
+            scanStartedAt:
+              type: string
+              format: date-time
+              description: Start time of last scan
+              example: '2018-02-27T04:49:26.257525Z'
+            activeThreats:
+              type: integer
+              format: int32
+              description: Current number of active threats
+              example: 3
+            modelName:
+              type: string
+              description: Device model
+              example: Acme computers - 15x4k
+            remoteProfilingState:
+              type: string
+              description: Agent remote profiling state
+            agentVersion:
+              type: string
+              example: 2.5.0.2417
+              description: Agent version
+            groupIp:
+              type: string
+              description: IP Address subnet
+              example: 31.155.5.x
+            inRemoteShellSession:
+              type: boolean
+              description: Is the Agent in a remote shell session
+            scanFinishedAt:
+              type: string
+              format: date-time
+              description: Finish time of last scan (If applicable)
+              example: '2018-02-27T04:49:26.257525Z'
+            cpuCount:
+              type: integer
+              format: int32
+              description: Number of CPUs
+              example: 2
+            rangerVersion:
+              type: string
+              description: The version of Ranger
+            coreCount:
+              type: integer
+              format: int32
+              description: CPU cores
+              example: 8
+            isDecommissioned:
+              type: boolean
+              description: Is Agent decommissioned
+            osRevision:
+              type: string
+              description: Os revision
+            operationalStateExpiration:
+              type: string
+              format: date-time
+              description: Agent operational state expiration
+              example: '2018-02-27T04:49:26.257525Z'
+            isActive:
+              type: boolean
+              description: Indicates if the agent was recently active
+            storageType:
+              type: string
+              description: Storage Type
+            installerType:
+              type: string
+              description: Installer package type (file extension)
+              example: .msi
+              enum:
+                - .msi
+                - .exe
+                - .deb
+                - .rpm
+                - .bsx
+                - .pkg
+                - .img
+                - unknown
+                - .tar
+                - .zip
+                - .gz
+                - .xz
+            groupUpdatedAt:
+              type: string
+              format: date-time
+              example: '2018-02-27T04:49:26.257525Z'
+              description: Group updated at
+            isUninstalled:
+              type: boolean
+              description: Indicates if Agent was removed from the device
+            detectionState:
+              type: string
+              description: Detection State
+            totalMemory:
+              type: integer
+              format: int32
+              description: Memory size (MB)
+              example: 8192
+            appsVulnerabilityStatus:
+              type: string
+              example: patch_required
+              enum:
+                - patch_required
+                - up_to_date
+                - not_applicable
+              description: Apps vulnerability status
+            groupId:
+              type: string
+              description: A reference to the containing network group
+              example: '225494730938493804'
+            activeDirectory:
+              description: Active Directory data
+              type: object
+              properties:
+                lastUserDistinguishedName:
+                  type: string
+                  example: 'CN=John Doe,CN=Users,DC=sentinelone,DC=com'
+                  description: Last user distinguished name
+                computerDistinguishedName:
+                  type: string
+                  example: 'CN=TEMP-T470P,CN=Computers,DC=sentinelone,DC=com'
+                  description: Computer distinguished name
+                computerMemberOf:
+                  type: array
+                  example:
+                    - 'CN=Computers,DC=sentinelone,DC=com'
+                    - 'CN=Servers,CN=Computers,DC=sentinelone,DC=com'
+                  description: Computer member of
+                  items:
+                    type: string
+                userPrincipalName:
+                  type: string
+                  example: some@mail.com
+                  description: User principal name
+                mail:
+                  type: string
+                  example: ActiveDirectory UPN
+                  description: Mail
+                lastUserMemberOf:
+                  type: array
+                  example:
+                    - 'CN=Users,DC=sentinelone,DC=com'
+                    - 'CN=Managers,CN=Users,DC=sentinelone,DC=com'
+                  description: Last user member of
+                  items:
+                    type: string
+            scanStatus:
+              type: string
+              description: Last scan status
+              example: none
+              enum:
+                - none
+                - started
+                - aborted
+                - finished
+            osType:
+              type: string
+              description: OS type
+              example: windows
+              enum:
+                - windows
+                - windows_legacy
+                - linux
+                - macos
+            accountId:
+              type: string
+              description: A reference to the containing account
+              example: '225494730938493804'
+            mitigationMode:
+              type: string
+              description: Agent mitigation mode policy
+              example: detect
+              enum:
+                - detect
+                - protect
+            cloudProviders:
+              type: object
+              description: Cloud providers for this agent
+              additionalProperties:
+                type: object
+                properties:
+                  awsSecurityGroups:
+                    type: array
+                    items:
+                      type: string
+                  cloudInstanceSize:
+                    type: string
+                  awsRole:
+                    type: string
+                  kubernetesNodeLabels:
+                    type: array
+                    items:
+                      type: string
+                  cloudLocation:
+                    type: string
+                  agentNamespace:
+                    type: string
+                  agentPodName:
+                    type: string
+                  kubernetesType:
+                    type: string
+                  awsSubnetIds:
+                    type: array
+                    items:
+                      type: string
+                  cloudNetwork:
+                    type: string
+                  kubernetesVersion:
+                    type: string
+                  cloudAccount:
+                    type: string
+                  clusterName:
+                    type: string
+                  cloudTags:
+                    type: array
+                    items:
+                      type: string
+                  kubernetesNodeName:
+                    type: string
+                  cloudImage:
+                    type: string
+                  gcpServiceAccount:
+                    type: string
+                  azureResourceGroup:
+                    type: string
+                  cloudInstanceId:
+                    type: string
+            osArch:
+              type: string
+              example: 32 bit
+              enum:
+                - 32 bit
+                - 64 bit
+              description: Os arch
+            cpuId:
+              type: string
+              description: CPU model
+              example: Acme chips inc. Pro5555 @ 3.33GHz
+            tags:
+              description: Agent's attached tags
+              type: object
+              properties:
+                sentinelone:
+                  description: SentinelOne tags section
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      assignedById:
+                        type: string
+                        description: user ID who assigned the tag to the agent
+                        example: '225494730938493804'
+                      assignedAt:
+                        type: string
+                        format: date-time
+                        description: when tag assigned to the agent
+                        example: '2018-02-27T04:49:26.257525Z'
+                      assignedBy:
+                        type: string
+                        description: full user name who assigned the tag to the agent
+                      key:
+                        type: string
+                        description: Tag key
+                      value:
+                        type: string
+                        description: Tag value
+                      id:
+                        type: string
+                        description: Tag ID
+                        example: '225494730938493804'
+            osUsername:
+              type: string
+              description: Os username
+            remoteProfilingStateExpiration:
+              type: string
+              format: date-time
+              description: Agent remote profiling state expiration inseconds
+            operationalState:
+              type: string
+              description: Agent operational state
+            machineType:
+              type: string
+              example: unknown
+              enum:
+                - unknown
+                - desktop
+                - laptop
+                - server
+                - kubernetes node
+                - storage
+              description: Machine type
+            threatRebootRequired:
+              type: boolean
+              description: >-
+                Has at least one threat with at least one mitigation action that
+                is pending reboot to succeed
+            externalId:
+              type: string
+              description: External id set by customer
+            licenseKey:
+              type: string
+              description: License key
+            externalIp:
+              type: string
+              description: External IPv4 address
+              example: 31.155.5.7
+            locations:
+              description: A list of locations reported by the Agent
+              type: array
+              items:
+                type: object
+                properties:
+                  id:
+                    type: string
+                    description: Location ID
+                    example: '225494730938493804'
+                  name:
+                    type: string
+                    description: Location name
+                    example: office1
+                  scope:
+                    type: string
+                    description: Location scope
+                    example: site
+                    enum:
+                      - site
+                      - group
+                      - account
+                      - global
+            infected:
+              type: boolean
+              readOnly: true
+              description: Indicates if the Agent has active threats
+            rangerStatus:
+              type: string
+              description: Is Agent disabled as a Ranger
+              example: NotApplicable
+              enum:
+                - NotApplicable
+                - Enabled
+                - Disabled
+            serialNumber:
+              type: string
+              description: Serial Number of the endpoint
+            createdAt:
+              type: string
+              format: date-time
+              example: '2018-02-27T04:49:26.257525Z'
+              description: Created at
+            locationType:
+              type: string
+              description: Reported location type
+              example: not_applicable
+              enum:
+                - not_applicable
+                - not_supported
+                - specific
+                - fallback
+            uuid:
+              type: string
+              description: Agent's universally unique identifier
+              example: ff819e70af13be381993075eb0ce5f2f6de05be2
+            networkQuarantineEnabled:
+              type: boolean
+              description: Network quarantine enabled
+            osStartTime:
+              type: string
+              format: date-time
+              description: Last boot time
+              example: '2018-02-27T04:49:26.257525Z'
+            lastLoggedInUserName:
+              type: string
+              example: janedoe3
+              description: Last logged in user name
+            groupName:
+              type: string
+              description: Name of the containing network group
+            mitigationModeSuspicious:
+              type: string
+              description: Mitigation mode policy for suspicious activity
+              example: detect
+              enum:
+                - detect
+                - protect
+            policyUpdatedAt:
+              type: string
+              format: date-time
+              example: '2018-02-27T04:49:26.257525Z'
+              description: Policy updated at
+            lastActiveDate:
+              type: string
+              format: date-time
+              example: '2018-02-27T04:49:26.257525Z'
+              description: Last active date
+            networkInterfaces:
+              description: Device's network interfaces
+              type: array
+              items:
+                type: object
+                properties:
+                  inet6:
+                    type: array
+                    description: IPv6 addresses
+                    example:
+                      - '2001:db8:a0b:12f0::1'
+                      - '2001:db8:a0b:12f0::2'
+                    items:
+                      type: string
+                  inet:
+                    type: array
+                    description: IPv4 addresses
+                    example:
+                      - 192.168.0.1
+                      - 192.168.0.2
+                    items:
+                      type: string
+                  name:
+                    type: string
+                    description: Name
+                  physical:
+                    type: string
+                    description: Interface's MAC address
+                    example: '00:25:96:FF:FE:12:34:56'
+                  id:
+                    type: string
+                    example: '225494730938493804'
+                    description: Id
+                  gatewayIp:
+                    type: string
+                    description: The default gateway ip
+                    example: 192.168.1.1
+                  gatewayMacAddress:
+                    type: string
+                    description: The default gateway mac address
+                    example: '00:25:96:FF:FE:12'
+            siteName:
+              type: string
+              description: Name of the containing site
+            scanAbortedAt:
+              type: string
+              format: date-time
+              description: Abort time of last scan (If applicable)
+              example: '2018-02-27T04:49:26.257525Z'
+            networkStatus:
+              type: string
+              description: Agent's network connectivity status
+              example: connected
+              enum:
+                - connected
+                - disconnected
+                - connecting
+                - disconnecting
+            registeredAt:
+              type: string
+              format: date-time
+              description: >-
+                Time of first registration to management console (similar to
+                createdAt)
+              example: '2018-02-27T04:49:26.257525Z'
+            osName:
+              type: string
+              example: Windows 10
+              description: Os name
+            firewallEnabled:
+              type: boolean
+              description: Firewall enabled
+            updatedAt:
+              type: string
+              format: date-time
+              example: '2018-02-27T04:49:26.257525Z'
+              description: Updated at
+            locationEnabled:
+              type: boolean
+              description: Location enabled
+      pagination:
+        description: Pagination information
+        type: object
+        properties:
+          nextCursor:
+            type: string
+            default: null
+            x-nullable: true
+            example: YWdlbnRfaWQ6NTgwMjkzODE=
+            description: >-
+              Pass this value as "cursor" on your next request, to get the next
+              page of results (Will be "null" when last page reached)
+          totalItems:
+            type: integer
+            format: int32
+            example: 580
+            description: Total number of items found matching your query
+        required:
+          - totalItems
+    required:
+      - pagination
+  agents.schemas_AgentsDangerousActionSchema:
+    type: object
+    properties:
+      filter:
+        description: >-
+          Applied filter - only matched Agents will be affected by the requested
+          action. Note: One of these filter arguments must be supplied: ids,
+          groupIds, filterId.
+        type: object
+        properties:
+          scanStatusesNin:
+            type: array
+            maxItems: 5000
+            description: Not included scan statuses
+            example:
+              - started
+              - aborted
+            items:
+              type: string
+              example: none
+              enum:
+                - none
+                - started
+                - aborted
+                - finished
+          query:
+            type: string
+            description: >-
+              A free-text search term, will match applicable attributes
+              (sub-string match). Note: Device's physical addresses will be
+              matched if they start with the search term only (no match if they
+              contain the term).
+            example: Linux
+          decommissionedAt__gte:
+            type: string
+            format: date-time
+            description: Agents decommissioned after or at this timestamp
+            example: '2018-02-27T04:49:26.257525Z'
+          awsSecurityGroups__contains:
+            type: array
+            maxItems: 255
+            description: Free-text filter by aws securityGroups(supports multiple values)
+            items:
+              type: string
+              minLength: 2
+          threatMitigationStatus:
+            type: string
+            description: Include only Agents that have threats with this mitigation status
+            example: mitigated
+            enum:
+              - mitigated
+              - blocked
+              - active
+              - suspicious
+              - pending
+              - suspicious_resolved
+          registeredAt__lte:
+            type: string
+            format: date-time
+            description: Agents registered before or at this time
+            example: '2018-02-27T04:49:26.257525Z'
+          updatedAt__gt:
+            type: string
+            format: date-time
+            description: Agents updated after this timestamp
+            example: '2018-02-27T04:49:26.257525Z'
+          domains:
+            type: array
+            maxItems: 5000
+            description: Included network domains
+            example:
+              - mybusiness.net
+              - workgroup
+            items:
+              type: string
+          networkQuarantineEnabled:
+            type: array
+            maxItems: 5000
+            description: >-
+              The agents supports Network Quarantine Control and its enabled for
+              the agent's group
+            items:
+              type: boolean
+          migrationStatus:
+            type: string
+            example: N/A
+            enum:
+              - N/A
+              - Pending
+              - Migrated
+              - Failed
+            description: Migration status
+          accountIds:
+            type: array
+            minItems: 1
+            maxItems: 500
+            description: List of Account IDs to filter by
+            example:
+              - '225494730938493804'
+              - '225494730938493915'
+            items:
+              type: string
+              example: '225494730938493804'
+          ids:
+            type: array
+            maxItems: 5000
+            description: A list of Agent IDs
+            example:
+              - '225494730938493804'
+              - '225494730938493915'
+            items:
+              type: string
+              example: '225494730938493804'
+          networkInterfaceInet__contains:
+            type: array
+            maxItems: 10
+            description: Free-text filter by local IP (supports multiple values)
+            example:
+              - '192'
+              - 10.0.0
+            items:
+              type: string
+              minLength: 2
+          agentVersionsNin:
+            type: array
+            maxItems: 5000
+            description: Agent versions not to include
+            example:
+              - 2.0.0.0
+              - 2.1.5.144
+            items:
+              type: string
+              example: 2.5.1.1320
+          cloudProvider:
+            type: array
+            maxItems: 5000
+            description: Agents from which cloud provider
+            items:
+              type: string
+          osTypesNin:
+            type: array
+            maxItems: 5000
+            description: Not included OS types
+            example:
+              - windows
+            items:
+              type: string
+              description: OS type
+              example: windows
+              enum:
+                - windows
+                - windows_legacy
+                - linux
+                - macos
+          installerTypesNin:
+            type: array
+            maxItems: 5000
+            description: Exclude Agents installed with these package types
+            example:
+              - .msi
+            items:
+              type: string
+              example: .msi
+              enum:
+                - .msi
+                - .exe
+                - .deb
+                - .rpm
+                - .bsx
+                - .pkg
+                - .img
+                - unknown
+                - .tar
+                - .zip
+                - .gz
+                - .xz
+          machineTypes:
+            type: array
+            maxItems: 5000
+            description: Included machine types
+            example:
+              - laptop
+              - desktop
+            items:
+              type: string
+              example: unknown
+              enum:
+                - unknown
+                - desktop
+                - laptop
+                - server
+                - kubernetes node
+                - storage
+          encryptedApplications:
+            type: boolean
+            description: Disk encryption status
+          isPendingUninstall:
+            type: boolean
+            description: Include only Agents with pending uninstall requests
+          hasLocalConfiguration:
+            type: boolean
+            description: Agent has a local configuration set
+          isUpToDate:
+            type: boolean
+            description: Include only Agents with updated software
+          isDecommissioned:
+            type: array
+            maxItems: 5000
+            description: 'Include active, decommissioned or both'
+            example:
+              - true
+              - false
+            items:
+              type: boolean
+          computerName:
+            type: string
+            example: My Office Desktop
+            description: Computer name
+          lastLoggedInUserName__contains:
+            type: array
+            maxItems: 10
+            description: Free-text filter by username (supports multiple values)
+            example:
+              - admin
+              - johnd1
+            items:
+              type: string
+              minLength: 2
+          appsVulnerabilityStatuses:
+            type: array
+            maxItems: 5000
+            example:
+              - patch_required
+            description: Apps vulnerability status in
+            items:
+              type: string
+              example: patch_required
+              enum:
+                - patch_required
+                - up_to_date
+                - not_applicable
+          k8sVersion__contains:
+            type: array
+            maxItems: 255
+            description: Free-text filter by K8s version (supports multiple values)
+            items:
+              type: string
+              minLength: 2
+          firewallEnabled:
+            type: array
+            maxItems: 5000
+            description: >-
+              The agents supports Firewall Control and it is enabled for the
+              agent's group
+            items:
+              type: boolean
+          decommissionedAt__lt:
+            type: string
+            format: date-time
+            description: Agents decommissioned before this timestamp
+            example: '2018-02-27T04:49:26.257525Z'
+          activeThreats:
+            type: integer
+            format: int32
+            description: Include Agents with this amount of active threats
+            example: 3
+          awsSubnetIds__contains:
+            type: array
+            maxItems: 255
+            description: Free-text filter by aws subnet ids (supports multiple values)
+            items:
+              type: string
+              minLength: 2
+          createdAt__gte:
+            type: string
+            format: date-time
+            description: Agents created after or at this timestamp
+            example: '2018-02-27T04:49:26.257525Z'
+          k8sNodeName__contains:
+            type: array
+            maxItems: 255
+            description: Free-text filter by K8s node name (supports multiple values)
+            items:
+              type: string
+              minLength: 2
+          totalMemory__gte:
+            type: integer
+            format: int32
+            description: 'Memory size (MB, more than or equal)'
+          machineTypesNin:
+            type: array
+            maxItems: 5000
+            description: Not included machine types
+            example:
+              - laptop
+              - desktop
+            items:
+              type: string
+              example: unknown
+              enum:
+                - unknown
+                - desktop
+                - laptop
+                - server
+                - kubernetes node
+                - storage
+          lastActiveDate__between:
+            type: string
+            description: >-
+              Date range for last active date(format:
+              <from_timestamp>-<to_timestamp>, inclusive)
+            example: 1514978764288-1514978999999
+          networkInterfaceGatewayMacAddress__contains:
+            type: array
+            maxItems: 10
+            description: Free-text filter by Gateway MAC address (supports multiple values)
+            example:
+              - 'aa:0f'
+              - ':41:'
+            items:
+              type: string
+              minLength: 2
+          awsRole__contains:
+            type: array
+            maxItems: 255
+            description: Free-text filter by aws role(supports multiple values)
+            items:
+              type: string
+              minLength: 2
+          remoteProfilingStatesNin:
+            type: array
+            maxItems: 5000
+            description: Do not include these Agent remote profiling states
+            items:
+              type: string
+          lastActiveDate__lte:
+            type: string
+            format: date-time
+            description: Agents last active before or at this time
+            example: '2018-02-27T04:49:26.257525Z'
+          createdAt__lte:
+            type: string
+            format: date-time
+            description: Agents created before or at this timestamp
+            example: '2018-02-27T04:49:26.257525Z'
+          consoleMigrationStatusesNin:
+            type: array
+            maxItems: 5000
+            example:
+              - N/A
+            description: Migration status nin
+            items:
+              type: string
+              example: N/A
+              enum:
+                - N/A
+                - Pending
+                - Migrated
+                - Failed
+          filteredSiteIds:
+            type: array
+            maxItems: 5000
+            description: List of Site IDs to filter by
+            example:
+              - '225494730938493804'
+              - '225494730938493915'
+            items:
+              type: string
+              example: '225494730938493804'
+          adComputerName__contains:
+            type: array
+            maxItems: 10
+            example:
+              - DC=sentinelone
+            description: >-
+              Free-text filter by Active Directory computer name string
+              (supports multiple values)
+            items:
+              type: string
+              minLength: 2
+          registeredAt__gt:
+            type: string
+            format: date-time
+            description: Agents registered after this time
+            example: '2018-02-27T04:49:26.257525Z'
+          cloudTags__contains:
+            type: array
+            maxItems: 255
+            description: Free-text filter by cloud tags (supports multiple values)
+            items:
+              type: string
+              minLength: 2
+          adUserQuery__contains:
+            type: array
+            maxItems: 10
+            example:
+              - DC=sentinelone
+              - John
+            description: >-
+              Free-text filter by Active Directory computer name or its groups
+              (supports multiple values)
+            items:
+              type: string
+              minLength: 2
+          threatContentHash:
+            type: string
+            description: >-
+              Include only Agents that have at least one threat with this
+              content hash
+            example: cf23df2207d99a74fbe169e3eba035e633b65d94
+          scanStatuses:
+            type: array
+            maxItems: 5000
+            description: Included scan statuses
+            example:
+              - started
+              - aborted
+            items:
+              type: string
+              example: none
+              enum:
+                - none
+                - started
+                - aborted
+                - finished
+          operationalStatesNin:
+            type: array
+            maxItems: 5000
+            description: Do not include these Agent operational states
+            items:
+              type: string
+          threatRebootRequired:
+            type: array
+            maxItems: 5000
+            description: >-
+              Has at least one threat with at least one mitigation action
+              pending reboot to succeed
+            items:
+              type: boolean
+          isActive:
+            type: boolean
+            description: Include only active Agents
+          totalMemory__lt:
+            type: integer
+            format: int32
+            description: 'Memory size (MB, less than)'
+          adComputerQuery__contains:
+            type: array
+            maxItems: 10
+            example:
+              - DC=sentinelone
+              - Windows
+            description: >-
+              Free-text filter by Active Directory computer name or its groups
+              (supports multiple values)
+            items:
+              type: string
+              minLength: 2
+          userActionsNeeded:
+            type: array
+            maxItems: 5000
+            description: Included pending user actions
+            example:
+              - reboot_needed
+              - upgrade_needed
+            items:
+              type: string
+              example: none
+              enum:
+                - none
+                - reboot_needed
+                - user_action_needed
+                - upgrade_needed
+                - incompatible_os
+                - unprotected
+                - user_action_needed_fda
+                - user_action_needed_rs_fda
+                - user_action_needed_network
+                - rebootless_without_dynamic_detection
+                - extended_exclusions_partially_accepted
+                - user_action_needed_bluetooth_per
+                - reboot_category
+                - missing_permissions_category
+                - agent_suppressed_category
+                - incompatible_os_category
+                - unprotected_category
+          updatedAt__between:
+            type: string
+            description: >-
+              Date range for update time (format:
+              <from_timestamp>-<to_timestamp>, inclusive)
+            example: 1514978890136-1514978650130
+          cpuCount__gte:
+            type: integer
+            format: int32
+            description: Number of CPUs (more than or equal)
+          uuids:
+            type: array
+            maxItems: 5000
+            description: A list of included UUIDs
+            example:
+              - ff819e70af13be381993075eb0ce5f2f6de05b11
+              - ff819e70af13be381993075eb0ce5f2f6de05c22
+            items:
+              type: string
+          serialNumber__contains:
+            type: array
+            maxItems: 255
+            description: Free-text filter by Serial Number (supports multiple values)
+            items:
+              type: string
+              minLength: 2
+          registeredAt__between:
+            type: string
+            description: >-
+              Date range for first registration time (format:
+              <from_timestamp>-<to_timestamp>, inclusive)
+            example: 1514978764288-1514978999999
+          scanStatus:
+            type: string
+            example: none
+            enum:
+              - none
+              - started
+              - aborted
+              - finished
+            description: Scan status
+          externalId__contains:
+            type: array
+            maxItems: 255
+            description: Free-text filter by external ID (Customer ID)
+            example:
+              - 'Tag#1 - monitoring'
+              - Performance machine
+            items:
+              type: string
+              minLength: 2
+          totalMemory__lte:
+            type: integer
+            format: int32
+            description: 'Memory size (MB, less than or equal)'
+          locationIds:
+            type: array
+            maxItems: 5000
+            description: Include only Agents reporting these locations
+            example:
+              - '225494730938493804'
+              - '225494730938493915'
+            items:
+              type: string
+              example: '225494730938493804'
+          cloudNetwork__contains:
+            type: array
+            maxItems: 255
+            description: Free-text filter by cloud network (supports multiple values)
+            items:
+              type: string
+              minLength: 2
+          azureResourceGroup__contains:
+            type: array
+            maxItems: 255
+            description: Free-text filter by azure resource group(supports multiple values)
+            items:
+              type: string
+              minLength: 2
+          coreCount__between:
+            type: string
+            description: Possible number of CPU cores (inclusive)
+            example: 2-8
+          isUninstalled:
+            type: array
+            maxItems: 5000
+            description: 'Include installed, uninstalled or both'
+            example:
+              - true
+              - false
+            items:
+              type: boolean
+          filterId:
+            type: string
+            description: Include all Agents matching this saved filter
+            example: '225494730938493804'
+          cpuId__contains:
+            type: array
+            maxItems: 255
+            description: Free-text filter by CPU name (supports multiple values)
+            example:
+              - Intel
+              - AMD
+            items:
+              type: string
+              minLength: 2
+          k8sType__contains:
+            type: array
+            maxItems: 255
+            description: Free-text filter by K8s type(supports multiple values)
+            items:
+              type: string
+              minLength: 2
+          cloudProviderNin:
+            type: array
+            maxItems: 5000
+            description: Exclude Agents from these cloud provider
+            items:
+              type: string
+          mitigationMode:
+            type: string
+            description: Agent mitigation mode policy
+            example: detect
+            enum:
+              - detect
+              - protect
+          cloudAccount__contains:
+            type: array
+            maxItems: 255
+            description: Free-text filter by cloud account (supports multiple values)
+            items:
+              type: string
+              minLength: 2
+          adComputerMember__contains:
+            type: array
+            maxItems: 10
+            example:
+              - DC=sentinelone
+            description: >-
+              Free-text filter by Active Directory computer groups string
+              (supports multiple values)
+            items:
+              type: string
+              minLength: 2
+          consoleMigrationStatuses:
+            type: array
+            maxItems: 5000
+            example:
+              - N/A
+            description: Migration status in
+            items:
+              type: string
+              example: N/A
+              enum:
+                - N/A
+                - Pending
+                - Migrated
+                - Failed
+          lastActiveDate__gt:
+            type: string
+            format: date-time
+            description: Agents last active after this time
+            example: '2018-02-27T04:49:26.257525Z'
+          osArch:
+            type: string
+            description: OS architecture
+            example: 32 bit
+            enum:
+              - 32 bit
+              - 64 bit
+          agentContentUpdateId__contains:
+            type: array
+            maxItems: 255
+            description: Free-text filter by content update ID (supports multiple values)
+            items:
+              type: string
+              minLength: 2
+          registeredAt__gte:
+            type: string
+            format: date-time
+            description: Agents registered after or at this time
+            example: '2018-02-27T04:49:26.257525Z'
+          coreCount__gt:
+            type: integer
+            format: int32
+            description: CPU cores (more than)
+          cpuCount__lte:
+            type: integer
+            format: int32
+            description: Number of CPUs (less than or equal)
+          agentPodName__contains:
+            type: array
+            maxItems: 255
+            description: Free-text filter by agent pod name (supports multiple values)
+            items:
+              type: string
+              minLength: 2
+          threatCreatedAt__lt:
+            type: string
+            format: date-time
+            description: Agents with threats reported before this time
+            example: '2018-02-27T04:49:26.257525Z'
+          decommissionedAt__between:
+            type: string
+            description: >-
+              Date range for decommission time (format:
+              <from_timestamp>-<to_timestamp>, inclusive)
+            example: 1514978890136-1514978650130
+          coreCount__gte:
+            type: integer
+            format: int32
+            description: CPU cores (more than or equal)
+          clusterName__contains:
+            type: array
+            maxItems: 255
+            description: Free-text filter by cluster name (supports multiple values)
+            items:
+              type: string
+              minLength: 2
+          cpuCount__gt:
+            type: integer
+            format: int32
+            description: Number of CPUs (more than)
+          adQuery__contains:
+            type: array
+            maxItems: 10
+            example:
+              - DC=sentinelone
+            description: >-
+              Free-text filter by Active Directory string (supports multiple
+              values)
+            items:
+              type: string
+              minLength: 2
+          rangerVersions:
+            type: array
+            maxItems: 5000
+            description: Ranger versions to include
+            example:
+              - 2.0.0.0
+              - 2.1.5.144
+            items:
+              type: string
+              example: 2.5.1.1320
+          userActionsNeededNin:
+            type: array
+            maxItems: 5000
+            description: Excluded pending user actions
+            example:
+              - reboot_needed
+              - upgrade_needed
+            items:
+              type: string
+              example: none
+              enum:
+                - none
+                - reboot_needed
+                - user_action_needed
+                - upgrade_needed
+                - incompatible_os
+                - unprotected
+                - user_action_needed_fda
+                - user_action_needed_rs_fda
+                - user_action_needed_network
+                - rebootless_without_dynamic_detection
+                - extended_exclusions_partially_accepted
+                - user_action_needed_bluetooth_per
+                - reboot_category
+                - missing_permissions_category
+                - agent_suppressed_category
+                - incompatible_os_category
+                - unprotected_category
+          threatCreatedAt__gt:
+            type: string
+            format: date-time
+            description: Agents with threats reported after this time
+            example: '2018-02-27T04:49:26.257525Z'
+          cloudInstanceSize__contains:
+            type: array
+            maxItems: 255
+            description: Free-text filter by cloud instance size(supports multiple values)
+            items:
+              type: string
+              minLength: 2
+          adQuery:
+            type: string
+            example: 'CN=Managers,DC=sentinelone,DC=com'
+            description: An Active Directory query string
+          externalIp__contains:
+            type: array
+            maxItems: 10
+            description: Free-text filter by visible IP (supports multiple values)
+            example:
+              - '205'
+              - '127.0'
+            items:
+              type: string
+              minLength: 2
+          locationEnabled:
+            type: array
+            maxItems: 5000
+            description: >-
+              The agents supports Location Awareness and it is enabled for the
+              agent's group
+            items:
+              type: boolean
+          totalMemory__gt:
+            type: integer
+            format: int32
+            description: 'Memory size (MB, more than)'
+          gatewayIp:
+            type: string
+            example: 192.168.0.1
+            description: Gateway ip
+          registeredAt__lt:
+            type: string
+            format: date-time
+            description: Agents registered before this time
+            example: '2018-02-27T04:49:26.257525Z'
+          agentVersions:
+            type: array
+            maxItems: 5000
+            description: Agent versions to include
+            example:
+              - 2.0.0.0
+              - 2.1.5.144
+            items:
+              type: string
+              example: 2.5.1.1320
+          installerTypes:
+            type: array
+            maxItems: 5000
+            description: Include only Agents installed with these package types
+            example:
+              - .msi
+            items:
+              type: string
+              example: .msi
+              enum:
+                - .msi
+                - .exe
+                - .deb
+                - .rpm
+                - .bsx
+                - .pkg
+                - .img
+                - unknown
+                - .tar
+                - .zip
+                - .gz
+                - .xz
+          coreCount__lte:
+            type: integer
+            format: int32
+            description: CPU cores (less than or equal)
+          totalMemory__between:
+            type: string
+            description: 'Total memory range (GB, inclusive)'
+            example: 4-8
+          lastActiveDate__gte:
+            type: string
+            format: date-time
+            description: Agents last active after or at this time
+            example: '2018-02-27T04:49:26.257525Z'
+          computerName__contains:
+            type: array
+            maxItems: 10
+            description: Free-text filter by computer name (supports multiple values)
+            example:
+              - john-office
+              - WIN
+            items:
+              type: string
+              minLength: 2
+          locationIdsNin:
+            type: array
+            maxItems: 5000
+            description: Do not include only Agents reporting these locations
+            example:
+              - '225494730938493804'
+              - '225494730938493915'
+            items:
+              type: string
+              example: '225494730938493804'
+          threatCreatedAt__lte:
+            type: string
+            format: date-time
+            description: Agents with threats reported before or at this time
+            example: '2018-02-27T04:49:26.257525Z'
+          hasTags:
+            type: boolean
+            description: Include only Agents that have tags
+          updatedAt__gte:
+            type: string
+            format: date-time
+            description: Agents updated after or at this timestamp
+            example: '2018-02-27T04:49:26.257525Z'
+          threatResolved:
+            type: boolean
+            description: Include only Agents with at least one resolved threat
+          decommissionedAt__gt:
+            type: string
+            format: date-time
+            description: Agents decommissioned after this timestamp
+            example: '2018-02-27T04:49:26.257525Z'
+          threatHidden:
+            type: boolean
+            description: Include only Agents with at least one hidden threat
+          infected:
+            type: boolean
+            description: Include only Agents with at least one active threat
+          uuid__contains:
+            type: array
+            maxItems: 10
+            description: Free-text filter by Agent UUID (supports multiple values)
+            example:
+              - e92-01928
+              - b055
+            items:
+              type: string
+              minLength: 2
+          networkStatusesNin:
+            type: array
+            maxItems: 5000
+            description: Included network statuses
+            example:
+              - connected
+              - connecting
+            items:
+              type: string
+              example: connected
+              enum:
+                - connected
+                - disconnected
+                - connecting
+                - disconnecting
+          cloudImage__contains:
+            type: array
+            maxItems: 255
+            description: Free-text filter by cloud image (supports multiple values)
+            items:
+              type: string
+              minLength: 2
+          siteIds:
+            type: array
+            minItems: 1
+            maxItems: 500
+            description: List of Site IDs to filter by
+            example:
+              - '225494730938493804'
+              - '225494730938493915'
+            items:
+              type: string
+              example: '225494730938493804'
+          rangerStatus:
+            type: string
+            description: '[DEPRECATED] Use rangerStatuses.'
+            example: NotApplicable
+            enum:
+              - NotApplicable
+              - Enabled
+              - Disabled
+          domainsNin:
+            type: array
+            maxItems: 5000
+            description: Not included network domains
+            example:
+              - mybusiness.net
+              - workgroup
+            items:
+              type: string
+          threatCreatedAt__gte:
+            type: string
+            format: date-time
+            description: Agents with threats reported after or at this time
+            example: '2018-02-27T04:49:26.257525Z'
+          csvFilterId:
+            type: string
+            description: The ID of the CSV file to filter by
+            example: '225494730938493804'
+          adUserName__contains:
+            type: array
+            maxItems: 10
+            example:
+              - DC=sentinelone
+            description: >-
+              Free-text filter by Active Directory username string (supports
+              multiple values)
+            items:
+              type: string
+              minLength: 2
+          appsVulnerabilityStatusesNin:
+            type: array
+            maxItems: 5000
+            example:
+              - patch_required
+            description: Apps vulnerability status nin
+            items:
+              type: string
+              example: patch_required
+              enum:
+                - patch_required
+                - up_to_date
+                - not_applicable
+          uuid:
+            type: string
+            description: Agent's universally unique identifier
+            example: ff819e70af13be381993075eb0ce5f2f6de05be2
+          coreCount__lt:
+            type: integer
+            format: int32
+            description: CPU cores (less than)
+          mitigationModeSuspicious:
+            type: string
+            description: Mitigation mode policy for suspicious activity
+            example: detect
+            enum:
+              - detect
+              - protect
+          rangerStatusesNin:
+            type: array
+            maxItems: 5000
+            description: Do not include these Ranger Statuses
+            example:
+              - NotApplicable
+            items:
+              type: string
+              example: NotApplicable
+              enum:
+                - NotApplicable
+                - Enabled
+                - Disabled
+          createdAt__gt:
+            type: string
+            format: date-time
+            description: Agents created after this timestamp
+            example: '2018-02-27T04:49:26.257525Z'
+          rangerVersionsNin:
+            type: array
+            maxItems: 5000
+            description: Ranger versions not to include
+            example:
+              - 2.0.0.0
+              - 2.1.5.144
+            items:
+              type: string
+              example: 2.5.1.1320
+          filteredGroupIds:
+            type: array
+            maxItems: 5000
+            description: List of Group IDs to filter by
+            example:
+              - '225494730938493804'
+              - '225494730938493915'
+            items:
+              type: string
+              example: '225494730938493804'
+          decommissionedAt__lte:
+            type: string
+            format: date-time
+            description: Agents decommissioned before this timestamp
+            example: '2018-02-27T04:49:26.257525Z'
+          operationalStates:
+            type: array
+            maxItems: 5000
+            description: Agent operational state
+            items:
+              type: string
+          osVersion__contains:
+            type: array
+            maxItems: 10
+            description: >-
+              Free-text filter by OS full name and version (supports multiple
+              values)
+            example:
+              - Service Pack 1
+            items:
+              type: string
+              minLength: 2
+          updatedAt__lte:
+            type: string
+            format: date-time
+            description: Agents updated before or at this timestamp
+            example: '2018-02-27T04:49:26.257525Z'
+          updatedAt__lt:
+            type: string
+            format: date-time
+            description: Agents updated before this timestamp
+            example: '2018-02-27T04:49:26.257525Z'
+          k8sNodeLabels__contains:
+            type: array
+            maxItems: 255
+            description: Free-text filter by K8s node labels (supports multiple values)
+            items:
+              type: string
+              minLength: 2
+          adUserMember__contains:
+            type: array
+            maxItems: 10
+            example:
+              - DC=sentinelone
+            description: >-
+              Free-text filter by Active Directory user groups string (supports
+              multiple values)
+            items:
+              type: string
+              minLength: 2
+          cloudLocation__contains:
+            type: array
+            maxItems: 255
+            description: Free-text filter by cloud location (supports multiple values)
+            items:
+              type: string
+              minLength: 2
+          networkStatuses:
+            type: array
+            maxItems: 5000
+            description: Included network statuses
+            example:
+              - connected
+              - connecting
+            items:
+              type: string
+              example: connected
+              enum:
+                - connected
+                - disconnected
+                - connecting
+                - disconnecting
+          remoteProfilingStates:
+            type: array
+            maxItems: 5000
+            description: Agent remote profiling state
+            items:
+              type: string
+          networkInterfacePhysical__contains:
+            type: array
+            maxItems: 10
+            description: Free-text filter by MAC address (supports multiple values)
+            example:
+              - 'aa:0f'
+              - ':41:'
+            items:
+              type: string
+              minLength: 2
+          agentNamespace__contains:
+            type: array
+            maxItems: 255
+            description: Free-text filter by agent namespace (supports multiple values)
+            items:
+              type: string
+              minLength: 2
+          rangerStatuses:
+            type: array
+            maxItems: 5000
+            description: Status of Ranger
+            example:
+              - NotApplicable
+            items:
+              type: string
+              example: NotApplicable
+              enum:
+                - NotApplicable
+                - Enabled
+                - Disabled
+          lastActiveDate__lt:
+            type: string
+            format: date-time
+            description: Agents last active before this time
+            example: '2018-02-27T04:49:26.257525Z'
+          activeThreats__gt:
+            type: integer
+            format: int32
+            description: Include Agents with at least this amount of active threats
+            example: 5
+          cloudInstanceId__contains:
+            type: array
+            maxItems: 255
+            description: Free-text filter by cloud instance id(supports multiple values)
+            items:
+              type: string
+              minLength: 2
+          createdAt__lt:
+            type: string
+            format: date-time
+            description: Agents created before this timestamp
+            example: '2018-02-27T04:49:26.257525Z'
+          cpuCount__between:
+            type: string
+            description: Possible number of CPU cores (inclusive)
+            example: 2-8
+          gcpServiceAccount__contains:
+            type: array
+            maxItems: 255
+            description: Free-text filter by gcp service account (supports multiple values)
+            items:
+              type: string
+              minLength: 2
+          threatCreatedAt__between:
+            type: string
+            description: >-
+              Agents with threats reported in a date range (format:
+              <from_timestamp>-<to_timestamp>, inclusive)
+            example: 1514978764288-1514978999999
+          osTypes:
+            type: array
+            maxItems: 5000
+            description: Included OS types
+            example:
+              - windows
+            items:
+              type: string
+              description: OS type
+              example: windows
+              enum:
+                - windows
+                - windows_legacy
+                - linux
+                - macos
+          cpuCount__lt:
+            type: integer
+            format: int32
+            description: Number of CPUs (less than)
+          groupIds:
+            type: array
+            maxItems: 5000
+            description: List of network groups
+            example:
+              - '225494730938493804'
+              - '225494730938493915'
+            items:
+              type: string
+              example: '225494730938493804'
+          computerName__like:
+            type: string
+            description: Match computer name partially (substring)
+            example: Lab1
+          tagsData:
+            type: string
+            description: >-
+              A JSON formatted string, where each key represents a tag key, and
+              each value represents a list of string values
+            example: '{"key1": ["value1_1", "value1_2"], "key2": ["value2"]}'
+          createdAt__between:
+            type: string
+            description: >-
+              Date range for creation time (format:
+              <from_timestamp>-<to_timestamp>, inclusive)
+            example: 1514978890136-1514978650130
+      data:
+        description: Data
+        type: object
+        properties: {}
+    required:
+      - filter
+  agents.schemas_AgentsActionSchema:
+    type: object
+    properties:
+      filter:
+        description: >-
+          Applied filter - only matched Agents will be affected by the requested
+          action. Leave empty to apply the action on all applicable Agents.
+        type: object
+        properties:
+          scanStatusesNin:
+            type: array
+            maxItems: 5000
+            description: Not included scan statuses
+            example:
+              - started
+              - aborted
+            items:
+              type: string
+              example: none
+              enum:
+                - none
+                - started
+                - aborted
+                - finished
+          query:
+            type: string
+            description: >-
+              A free-text search term, will match applicable attributes
+              (sub-string match). Note: Device's physical addresses will be
+              matched if they start with the search term only (no match if they
+              contain the term).
+            example: Linux
+          decommissionedAt__gte:
+            type: string
+            format: date-time
+            description: Agents decommissioned after or at this timestamp
+            example: '2018-02-27T04:49:26.257525Z'
+          awsSecurityGroups__contains:
+            type: array
+            maxItems: 255
+            description: Free-text filter by aws securityGroups(supports multiple values)
+            items:
+              type: string
+              minLength: 2
+          threatMitigationStatus:
+            type: string
+            description: Include only Agents that have threats with this mitigation status
+            example: mitigated
+            enum:
+              - mitigated
+              - blocked
+              - active
+              - suspicious
+              - pending
+              - suspicious_resolved
+          registeredAt__lte:
+            type: string
+            format: date-time
+            description: Agents registered before or at this time
+            example: '2018-02-27T04:49:26.257525Z'
+          updatedAt__gt:
+            type: string
+            format: date-time
+            description: Agents updated after this timestamp
+            example: '2018-02-27T04:49:26.257525Z'
+          domains:
+            type: array
+            maxItems: 5000
+            description: Included network domains
+            example:
+              - mybusiness.net
+              - workgroup
+            items:
+              type: string
+          networkQuarantineEnabled:
+            type: array
+            maxItems: 5000
+            description: >-
+              The agents supports Network Quarantine Control and its enabled for
+              the agent's group
+            items:
+              type: boolean
+          migrationStatus:
+            type: string
+            example: N/A
+            enum:
+              - N/A
+              - Pending
+              - Migrated
+              - Failed
+            description: Migration status
+          accountIds:
+            type: array
+            minItems: 1
+            maxItems: 500
+            description: List of Account IDs to filter by
+            example:
+              - '225494730938493804'
+              - '225494730938493915'
+            items:
+              type: string
+              minimum: 100000000000000000
+              example: '225494730938493804'
+          ids:
+            type: array
+            maxItems: 5000
+            description: A list of Agent IDs
+            example:
+              - '225494730938493804'
+              - '225494730938493915'
+            items:
+              type: string
+              minimum: 100000000000000000
+              example: '225494730938493804'
+          networkInterfaceInet__contains:
+            type: array
+            maxItems: 10
+            description: Free-text filter by local IP (supports multiple values)
+            example:
+              - '192'
+              - 10.0.0
+            items:
+              type: string
+              minLength: 2
+          agentVersionsNin:
+            type: array
+            maxItems: 5000
+            description: Agent versions not to include
+            example:
+              - 2.0.0.0
+              - 2.1.5.144
+            items:
+              type: string
+              example: 2.5.1.1320
+          cloudProvider:
+            type: array
+            maxItems: 5000
+            description: Agents from which cloud provider
+            items:
+              type: string
+          osTypesNin:
+            type: array
+            maxItems: 5000
+            description: Not included OS types
+            example:
+              - windows
+            items:
+              type: string
+              description: OS type
+              example: windows
+              enum:
+                - windows
+                - windows_legacy
+                - linux
+                - macos
+          installerTypesNin:
+            type: array
+            maxItems: 5000
+            description: Exclude Agents installed with these package types
+            example:
+              - .msi
+            items:
+              type: string
+              example: .msi
+              enum:
+                - .msi
+                - .exe
+                - .deb
+                - .rpm
+                - .bsx
+                - .pkg
+                - .img
+                - unknown
+                - .tar
+                - .zip
+                - .gz
+                - .xz
+          machineTypes:
+            type: array
+            maxItems: 5000
+            description: Included machine types
+            example:
+              - laptop
+              - desktop
+            items:
+              type: string
+              example: unknown
+              enum:
+                - unknown
+                - desktop
+                - laptop
+                - server
+                - kubernetes node
+                - storage
+          encryptedApplications:
+            type: boolean
+            description: Disk encryption status
+          isPendingUninstall:
+            type: boolean
+            description: Include only Agents with pending uninstall requests
+          hasLocalConfiguration:
+            type: boolean
+            description: Agent has a local configuration set
+          isUpToDate:
+            type: boolean
+            description: Include only Agents with updated software
+          isDecommissioned:
+            type: array
+            maxItems: 5000
+            description: 'Include active, decommissioned or both'
+            example:
+              - true
+              - false
+            items:
+              type: boolean
+          computerName:
+            type: string
+            example: My Office Desktop
+            description: Computer name
+          lastLoggedInUserName__contains:
+            type: array
+            maxItems: 10
+            description: Free-text filter by username (supports multiple values)
+            example:
+              - admin
+              - johnd1
+            items:
+              type: string
+              minLength: 2
+          appsVulnerabilityStatuses:
+            type: array
+            maxItems: 5000
+            example:
+              - patch_required
+            description: Apps vulnerability status in
+            items:
+              type: string
+              example: patch_required
+              enum:
+                - patch_required
+                - up_to_date
+                - not_applicable
+          k8sVersion__contains:
+            type: array
+            maxItems: 255
+            description: Free-text filter by K8s version (supports multiple values)
+            items:
+              type: string
+              minLength: 2
+          firewallEnabled:
+            type: array
+            maxItems: 5000
+            description: >-
+              The agents supports Firewall Control and it is enabled for the
+              agent's group
+            items:
+              type: boolean
+          decommissionedAt__lt:
+            type: string
+            format: date-time
+            description: Agents decommissioned before this timestamp
+            example: '2018-02-27T04:49:26.257525Z'
+          activeThreats:
+            type: integer
+            format: int32
+            description: Include Agents with this amount of active threats
+            example: 3
+          awsSubnetIds__contains:
+            type: array
+            maxItems: 255
+            description: Free-text filter by aws subnet ids (supports multiple values)
+            items:
+              type: string
+              minLength: 2
+          createdAt__gte:
+            type: string
+            format: date-time
+            description: Agents created after or at this timestamp
+            example: '2018-02-27T04:49:26.257525Z'
+          k8sNodeName__contains:
+            type: array
+            maxItems: 255
+            description: Free-text filter by K8s node name (supports multiple values)
+            items:
+              type: string
+              minLength: 2
+          totalMemory__gte:
+            type: integer
+            format: int32
+            description: 'Memory size (MB, more than or equal)'
+          machineTypesNin:
+            type: array
+            maxItems: 5000
+            description: Not included machine types
+            example:
+              - laptop
+              - desktop
+            items:
+              type: string
+              example: unknown
+              enum:
+                - unknown
+                - desktop
+                - laptop
+                - server
+                - kubernetes node
+                - storage
+          lastActiveDate__between:
+            type: string
+            description: >-
+              Date range for last active date(format:
+              <from_timestamp>-<to_timestamp>, inclusive)
+            example: 1514978764288-1514978999999
+          networkInterfaceGatewayMacAddress__contains:
+            type: array
+            maxItems: 10
+            description: Free-text filter by Gateway MAC address (supports multiple values)
+            example:
+              - 'aa:0f'
+              - ':41:'
+            items:
+              type: string
+              minLength: 2
+          awsRole__contains:
+            type: array
+            maxItems: 255
+            description: Free-text filter by aws role(supports multiple values)
+            items:
+              type: string
+              minLength: 2
+          remoteProfilingStatesNin:
+            type: array
+            maxItems: 5000
+            description: Do not include these Agent remote profiling states
+            items:
+              type: string
+          lastActiveDate__lte:
+            type: string
+            format: date-time
+            description: Agents last active before or at this time
+            example: '2018-02-27T04:49:26.257525Z'
+          createdAt__lte:
+            type: string
+            format: date-time
+            description: Agents created before or at this timestamp
+            example: '2018-02-27T04:49:26.257525Z'
+          consoleMigrationStatusesNin:
+            type: array
+            maxItems: 5000
+            example:
+              - N/A
+            description: Migration status nin
+            items:
+              type: string
+              example: N/A
+              enum:
+                - N/A
+                - Pending
+                - Migrated
+                - Failed
+          filteredSiteIds:
+            type: array
+            maxItems: 5000
+            description: List of Site IDs to filter by
+            example:
+              - '225494730938493804'
+              - '225494730938493915'
+            items:
+              type: string
+              minimum: 100000000000000000
+              example: '225494730938493804'
+          adComputerName__contains:
+            type: array
+            maxItems: 10
+            example:
+              - DC=sentinelone
+            description: >-
+              Free-text filter by Active Directory computer name string
+              (supports multiple values)
+            items:
+              type: string
+              minLength: 2
+          registeredAt__gt:
+            type: string
+            format: date-time
+            description: Agents registered after this time
+            example: '2018-02-27T04:49:26.257525Z'
+          cloudTags__contains:
+            type: array
+            maxItems: 255
+            description: Free-text filter by cloud tags (supports multiple values)
+            items:
+              type: string
+              minLength: 2
+          adUserQuery__contains:
+            type: array
+            maxItems: 10
+            example:
+              - DC=sentinelone
+              - John
+            description: >-
+              Free-text filter by Active Directory computer name or its groups
+              (supports multiple values)
+            items:
+              type: string
+              minLength: 2
+          threatContentHash:
+            type: string
+            description: >-
+              Include only Agents that have at least one threat with this
+              content hash
+            example: cf23df2207d99a74fbe169e3eba035e633b65d94
+          scanStatuses:
+            type: array
+            maxItems: 5000
+            description: Included scan statuses
+            example:
+              - started
+              - aborted
+            items:
+              type: string
+              example: none
+              enum:
+                - none
+                - started
+                - aborted
+                - finished
+          operationalStatesNin:
+            type: array
+            maxItems: 5000
+            description: Do not include these Agent operational states
+            items:
+              type: string
+          threatRebootRequired:
+            type: array
+            maxItems: 5000
+            description: >-
+              Has at least one threat with at least one mitigation action
+              pending reboot to succeed
+            items:
+              type: boolean
+          isActive:
+            type: boolean
+            description: Include only active Agents
+          totalMemory__lt:
+            type: integer
+            format: int32
+            description: 'Memory size (MB, less than)'
+          adComputerQuery__contains:
+            type: array
+            maxItems: 10
+            example:
+              - DC=sentinelone
+              - Windows
+            description: >-
+              Free-text filter by Active Directory computer name or its groups
+              (supports multiple values)
+            items:
+              type: string
+              minLength: 2
+          userActionsNeeded:
+            type: array
+            maxItems: 5000
+            description: Included pending user actions
+            example:
+              - reboot_needed
+              - upgrade_needed
+            items:
+              type: string
+              example: none
+              enum:
+                - none
+                - reboot_needed
+                - user_action_needed
+                - upgrade_needed
+                - incompatible_os
+                - unprotected
+                - user_action_needed_fda
+                - user_action_needed_rs_fda
+                - user_action_needed_network
+                - rebootless_without_dynamic_detection
+                - extended_exclusions_partially_accepted
+                - user_action_needed_bluetooth_per
+                - reboot_category
+                - missing_permissions_category
+                - agent_suppressed_category
+                - incompatible_os_category
+                - unprotected_category
+          updatedAt__between:
+            type: string
+            description: >-
+              Date range for update time (format:
+              <from_timestamp>-<to_timestamp>, inclusive)
+            example: 1514978890136-1514978650130
+          cpuCount__gte:
+            type: integer
+            format: int32
+            description: Number of CPUs (more than or equal)
+          uuids:
+            type: array
+            maxItems: 5000
+            description: A list of included UUIDs
+            example:
+              - ff819e70af13be381993075eb0ce5f2f6de05b11
+              - ff819e70af13be381993075eb0ce5f2f6de05c22
+            items:
+              type: string
+          serialNumber__contains:
+            type: array
+            maxItems: 255
+            description: Free-text filter by Serial Number (supports multiple values)
+            items:
+              type: string
+              minLength: 2
+          registeredAt__between:
+            type: string
+            description: >-
+              Date range for first registration time (format:
+              <from_timestamp>-<to_timestamp>, inclusive)
+            example: 1514978764288-1514978999999
+          scanStatus:
+            type: string
+            example: none
+            enum:
+              - none
+              - started
+              - aborted
+              - finished
+            description: Scan status
+          externalId__contains:
+            type: array
+            maxItems: 255
+            description: Free-text filter by external ID (Customer ID)
+            example:
+              - 'Tag#1 - monitoring'
+              - Performance machine
+            items:
+              type: string
+              minLength: 2
+          totalMemory__lte:
+            type: integer
+            format: int32
+            description: 'Memory size (MB, less than or equal)'
+          locationIds:
+            type: array
+            maxItems: 5000
+            description: Include only Agents reporting these locations
+            example:
+              - '225494730938493804'
+              - '225494730938493915'
+            items:
+              type: string
+              minimum: 100000000000000000
+              example: '225494730938493804'
+          cloudNetwork__contains:
+            type: array
+            maxItems: 255
+            description: Free-text filter by cloud network (supports multiple values)
+            items:
+              type: string
+              minLength: 2
+          azureResourceGroup__contains:
+            type: array
+            maxItems: 255
+            description: Free-text filter by azure resource group(supports multiple values)
+            items:
+              type: string
+              minLength: 2
+          coreCount__between:
+            type: string
+            description: Possible number of CPU cores (inclusive)
+            example: 2-8
+          isUninstalled:
+            type: array
+            maxItems: 5000
+            description: 'Include installed, uninstalled or both'
+            example:
+              - true
+              - false
+            items:
+              type: boolean
+          filterId:
+            type: string
+            minimum: 100000000000000000
+            description: Include all Agents matching this saved filter
+            example: '225494730938493804'
+          cpuId__contains:
+            type: array
+            maxItems: 255
+            description: Free-text filter by CPU name (supports multiple values)
+            example:
+              - Intel
+              - AMD
+            items:
+              type: string
+              minLength: 2
+          k8sType__contains:
+            type: array
+            maxItems: 255
+            description: Free-text filter by K8s type(supports multiple values)
+            items:
+              type: string
+              minLength: 2
+          cloudProviderNin:
+            type: array
+            maxItems: 5000
+            description: Exclude Agents from these cloud provider
+            items:
+              type: string
+          mitigationMode:
+            type: string
+            description: Agent mitigation mode policy
+            example: detect
+            enum:
+              - detect
+              - protect
+          cloudAccount__contains:
+            type: array
+            maxItems: 255
+            description: Free-text filter by cloud account (supports multiple values)
+            items:
+              type: string
+              minLength: 2
+          adComputerMember__contains:
+            type: array
+            maxItems: 10
+            example:
+              - DC=sentinelone
+            description: >-
+              Free-text filter by Active Directory computer groups string
+              (supports multiple values)
+            items:
+              type: string
+              minLength: 2
+          consoleMigrationStatuses:
+            type: array
+            maxItems: 5000
+            example:
+              - N/A
+            description: Migration status in
+            items:
+              type: string
+              example: N/A
+              enum:
+                - N/A
+                - Pending
+                - Migrated
+                - Failed
+          lastActiveDate__gt:
+            type: string
+            format: date-time
+            description: Agents last active after this time
+            example: '2018-02-27T04:49:26.257525Z'
+          osArch:
+            type: string
+            description: OS architecture
+            example: 32 bit
+            enum:
+              - 32 bit
+              - 64 bit
+          agentContentUpdateId__contains:
+            type: array
+            maxItems: 255
+            description: Free-text filter by content update ID (supports multiple values)
+            items:
+              type: string
+              minLength: 2
+          registeredAt__gte:
+            type: string
+            format: date-time
+            description: Agents registered after or at this time
+            example: '2018-02-27T04:49:26.257525Z'
+          coreCount__gt:
+            type: integer
+            format: int32
+            description: CPU cores (more than)
+          cpuCount__lte:
+            type: integer
+            format: int32
+            description: Number of CPUs (less than or equal)
+          agentPodName__contains:
+            type: array
+            maxItems: 255
+            description: Free-text filter by agent pod name (supports multiple values)
+            items:
+              type: string
+              minLength: 2
+          threatCreatedAt__lt:
+            type: string
+            format: date-time
+            description: Agents with threats reported before this time
+            example: '2018-02-27T04:49:26.257525Z'
+          decommissionedAt__between:
+            type: string
+            description: >-
+              Date range for decommission time (format:
+              <from_timestamp>-<to_timestamp>, inclusive)
+            example: 1514978890136-1514978650130
+          coreCount__gte:
+            type: integer
+            format: int32
+            description: CPU cores (more than or equal)
+          clusterName__contains:
+            type: array
+            maxItems: 255
+            description: Free-text filter by cluster name (supports multiple values)
+            items:
+              type: string
+              minLength: 2
+          cpuCount__gt:
+            type: integer
+            format: int32
+            description: Number of CPUs (more than)
+          adQuery__contains:
+            type: array
+            maxItems: 10
+            example:
+              - DC=sentinelone
+            description: >-
+              Free-text filter by Active Directory string (supports multiple
+              values)
+            items:
+              type: string
+              minLength: 2
+          rangerVersions:
+            type: array
+            maxItems: 5000
+            description: Ranger versions to include
+            example:
+              - 2.0.0.0
+              - 2.1.5.144
+            items:
+              type: string
+              example: 2.5.1.1320
+          userActionsNeededNin:
+            type: array
+            maxItems: 5000
+            description: Excluded pending user actions
+            example:
+              - reboot_needed
+              - upgrade_needed
+            items:
+              type: string
+              example: none
+              enum:
+                - none
+                - reboot_needed
+                - user_action_needed
+                - upgrade_needed
+                - incompatible_os
+                - unprotected
+                - user_action_needed_fda
+                - user_action_needed_rs_fda
+                - user_action_needed_network
+                - rebootless_without_dynamic_detection
+                - extended_exclusions_partially_accepted
+                - user_action_needed_bluetooth_per
+                - reboot_category
+                - missing_permissions_category
+                - agent_suppressed_category
+                - incompatible_os_category
+                - unprotected_category
+          threatCreatedAt__gt:
+            type: string
+            format: date-time
+            description: Agents with threats reported after this time
+            example: '2018-02-27T04:49:26.257525Z'
+          cloudInstanceSize__contains:
+            type: array
+            maxItems: 255
+            description: Free-text filter by cloud instance size(supports multiple values)
+            items:
+              type: string
+              minLength: 2
+          adQuery:
+            type: string
+            example: 'CN=Managers,DC=sentinelone,DC=com'
+            description: An Active Directory query string
+          externalIp__contains:
+            type: array
+            maxItems: 10
+            description: Free-text filter by visible IP (supports multiple values)
+            example:
+              - '205'
+              - '127.0'
+            items:
+              type: string
+              minLength: 2
+          locationEnabled:
+            type: array
+            maxItems: 5000
+            description: >-
+              The agents supports Location Awareness and it is enabled for the
+              agent's group
+            items:
+              type: boolean
+          totalMemory__gt:
+            type: integer
+            format: int32
+            description: 'Memory size (MB, more than)'
+          gatewayIp:
+            type: string
+            example: 192.168.0.1
+            description: Gateway ip
+          registeredAt__lt:
+            type: string
+            format: date-time
+            description: Agents registered before this time
+            example: '2018-02-27T04:49:26.257525Z'
+          agentVersions:
+            type: array
+            maxItems: 5000
+            description: Agent versions to include
+            example:
+              - 2.0.0.0
+              - 2.1.5.144
+            items:
+              type: string
+              example: 2.5.1.1320
+          installerTypes:
+            type: array
+            maxItems: 5000
+            description: Include only Agents installed with these package types
+            example:
+              - .msi
+            items:
+              type: string
+              example: .msi
+              enum:
+                - .msi
+                - .exe
+                - .deb
+                - .rpm
+                - .bsx
+                - .pkg
+                - .img
+                - unknown
+                - .tar
+                - .zip
+                - .gz
+                - .xz
+          coreCount__lte:
+            type: integer
+            format: int32
+            description: CPU cores (less than or equal)
+          totalMemory__between:
+            type: string
+            description: 'Total memory range (GB, inclusive)'
+            example: 4-8
+          lastActiveDate__gte:
+            type: string
+            format: date-time
+            description: Agents last active after or at this time
+            example: '2018-02-27T04:49:26.257525Z'
+          computerName__contains:
+            type: array
+            maxItems: 10
+            description: Free-text filter by computer name (supports multiple values)
+            example:
+              - john-office
+              - WIN
+            items:
+              type: string
+              minLength: 2
+          locationIdsNin:
+            type: array
+            maxItems: 5000
+            description: Do not include only Agents reporting these locations
+            example:
+              - '225494730938493804'
+              - '225494730938493915'
+            items:
+              type: string
+              minimum: 100000000000000000
+              example: '225494730938493804'
+          threatCreatedAt__lte:
+            type: string
+            format: date-time
+            description: Agents with threats reported before or at this time
+            example: '2018-02-27T04:49:26.257525Z'
+          hasTags:
+            type: boolean
+            description: Include only Agents that have tags
+          updatedAt__gte:
+            type: string
+            format: date-time
+            description: Agents updated after or at this timestamp
+            example: '2018-02-27T04:49:26.257525Z'
+          threatResolved:
+            type: boolean
+            description: Include only Agents with at least one resolved threat
+          decommissionedAt__gt:
+            type: string
+            format: date-time
+            description: Agents decommissioned after this timestamp
+            example: '2018-02-27T04:49:26.257525Z'
+          threatHidden:
+            type: boolean
+            description: Include only Agents with at least one hidden threat
+          infected:
+            type: boolean
+            description: Include only Agents with at least one active threat
+          uuid__contains:
+            type: array
+            maxItems: 10
+            description: Free-text filter by Agent UUID (supports multiple values)
+            example:
+              - e92-01928
+              - b055
+            items:
+              type: string
+              minLength: 2
+          networkStatusesNin:
+            type: array
+            maxItems: 5000
+            description: Included network statuses
+            example:
+              - connected
+              - connecting
+            items:
+              type: string
+              example: connected
+              enum:
+                - connected
+                - disconnected
+                - connecting
+                - disconnecting
+          cloudImage__contains:
+            type: array
+            maxItems: 255
+            description: Free-text filter by cloud image (supports multiple values)
+            items:
+              type: string
+              minLength: 2
+          siteIds:
+            type: array
+            minItems: 1
+            maxItems: 500
+            description: List of Site IDs to filter by
+            example:
+              - '225494730938493804'
+              - '225494730938493915'
+            items:
+              type: string
+              minimum: 100000000000000000
+              example: '225494730938493804'
+          rangerStatus:
+            type: string
+            description: '[DEPRECATED] Use rangerStatuses.'
+            example: NotApplicable
+            enum:
+              - NotApplicable
+              - Enabled
+              - Disabled
+          domainsNin:
+            type: array
+            maxItems: 5000
+            description: Not included network domains
+            example:
+              - mybusiness.net
+              - workgroup
+            items:
+              type: string
+          threatCreatedAt__gte:
+            type: string
+            format: date-time
+            description: Agents with threats reported after or at this time
+            example: '2018-02-27T04:49:26.257525Z'
+          csvFilterId:
+            type: string
+            minimum: 100000000000000000
+            description: The ID of the CSV file to filter by
+            example: '225494730938493804'
+          adUserName__contains:
+            type: array
+            maxItems: 10
+            example:
+              - DC=sentinelone
+            description: >-
+              Free-text filter by Active Directory username string (supports
+              multiple values)
+            items:
+              type: string
+              minLength: 2
+          appsVulnerabilityStatusesNin:
+            type: array
+            maxItems: 5000
+            example:
+              - patch_required
+            description: Apps vulnerability status nin
+            items:
+              type: string
+              example: patch_required
+              enum:
+                - patch_required
+                - up_to_date
+                - not_applicable
+          uuid:
+            type: string
+            description: Agent's universally unique identifier
+            example: ff819e70af13be381993075eb0ce5f2f6de05be2
+          coreCount__lt:
+            type: integer
+            format: int32
+            description: CPU cores (less than)
+          mitigationModeSuspicious:
+            type: string
+            description: Mitigation mode policy for suspicious activity
+            example: detect
+            enum:
+              - detect
+              - protect
+          rangerStatusesNin:
+            type: array
+            maxItems: 5000
+            description: Do not include these Ranger Statuses
+            example:
+              - NotApplicable
+            items:
+              type: string
+              example: NotApplicable
+              enum:
+                - NotApplicable
+                - Enabled
+                - Disabled
+          createdAt__gt:
+            type: string
+            format: date-time
+            description: Agents created after this timestamp
+            example: '2018-02-27T04:49:26.257525Z'
+          rangerVersionsNin:
+            type: array
+            maxItems: 5000
+            description: Ranger versions not to include
+            example:
+              - 2.0.0.0
+              - 2.1.5.144
+            items:
+              type: string
+              example: 2.5.1.1320
+          filteredGroupIds:
+            type: array
+            maxItems: 5000
+            description: List of Group IDs to filter by
+            example:
+              - '225494730938493804'
+              - '225494730938493915'
+            items:
+              type: string
+              minimum: 100000000000000000
+              example: '225494730938493804'
+          decommissionedAt__lte:
+            type: string
+            format: date-time
+            description: Agents decommissioned before this timestamp
+            example: '2018-02-27T04:49:26.257525Z'
+          operationalStates:
+            type: array
+            maxItems: 5000
+            description: Agent operational state
+            items:
+              type: string
+          osVersion__contains:
+            type: array
+            maxItems: 10
+            description: >-
+              Free-text filter by OS full name and version (supports multiple
+              values)
+            example:
+              - Service Pack 1
+            items:
+              type: string
+              minLength: 2
+          updatedAt__lte:
+            type: string
+            format: date-time
+            description: Agents updated before or at this timestamp
+            example: '2018-02-27T04:49:26.257525Z'
+          updatedAt__lt:
+            type: string
+            format: date-time
+            description: Agents updated before this timestamp
+            example: '2018-02-27T04:49:26.257525Z'
+          k8sNodeLabels__contains:
+            type: array
+            maxItems: 255
+            description: Free-text filter by K8s node labels (supports multiple values)
+            items:
+              type: string
+              minLength: 2
+          adUserMember__contains:
+            type: array
+            maxItems: 10
+            example:
+              - DC=sentinelone
+            description: >-
+              Free-text filter by Active Directory user groups string (supports
+              multiple values)
+            items:
+              type: string
+              minLength: 2
+          cloudLocation__contains:
+            type: array
+            maxItems: 255
+            description: Free-text filter by cloud location (supports multiple values)
+            items:
+              type: string
+              minLength: 2
+          networkStatuses:
+            type: array
+            maxItems: 5000
+            description: Included network statuses
+            example:
+              - connected
+              - connecting
+            items:
+              type: string
+              example: connected
+              enum:
+                - connected
+                - disconnected
+                - connecting
+                - disconnecting
+          remoteProfilingStates:
+            type: array
+            maxItems: 5000
+            description: Agent remote profiling state
+            items:
+              type: string
+          networkInterfacePhysical__contains:
+            type: array
+            maxItems: 10
+            description: Free-text filter by MAC address (supports multiple values)
+            example:
+              - 'aa:0f'
+              - ':41:'
+            items:
+              type: string
+              minLength: 2
+          agentNamespace__contains:
+            type: array
+            maxItems: 255
+            description: Free-text filter by agent namespace (supports multiple values)
+            items:
+              type: string
+              minLength: 2
+          rangerStatuses:
+            type: array
+            maxItems: 5000
+            description: Status of Ranger
+            example:
+              - NotApplicable
+            items:
+              type: string
+              example: NotApplicable
+              enum:
+                - NotApplicable
+                - Enabled
+                - Disabled
+          lastActiveDate__lt:
+            type: string
+            format: date-time
+            description: Agents last active before this time
+            example: '2018-02-27T04:49:26.257525Z'
+          activeThreats__gt:
+            type: integer
+            format: int32
+            description: Include Agents with at least this amount of active threats
+            example: 5
+          cloudInstanceId__contains:
+            type: array
+            maxItems: 255
+            description: Free-text filter by cloud instance id(supports multiple values)
+            items:
+              type: string
+              minLength: 2
+          createdAt__lt:
+            type: string
+            format: date-time
+            description: Agents created before this timestamp
+            example: '2018-02-27T04:49:26.257525Z'
+          cpuCount__between:
+            type: string
+            description: Possible number of CPU cores (inclusive)
+            example: 2-8
+          gcpServiceAccount__contains:
+            type: array
+            maxItems: 255
+            description: Free-text filter by gcp service account (supports multiple values)
+            items:
+              type: string
+              minLength: 2
+          threatCreatedAt__between:
+            type: string
+            description: >-
+              Agents with threats reported in a date range (format:
+              <from_timestamp>-<to_timestamp>, inclusive)
+            example: 1514978764288-1514978999999
+          osTypes:
+            type: array
+            maxItems: 5000
+            description: Included OS types
+            example:
+              - windows
+            items:
+              type: string
+              description: OS type
+              example: windows
+              enum:
+                - windows
+                - windows_legacy
+                - linux
+                - macos
+          cpuCount__lt:
+            type: integer
+            format: int32
+            description: Number of CPUs (less than)
+          groupIds:
+            type: array
+            minItems: 1
+            maxItems: 500
+            description: List of Group IDs to filter by
+            example:
+              - '225494730938493804'
+              - '225494730938493915'
+            items:
+              type: string
+              minimum: 100000000000000000
+              example: '225494730938493804'
+          computerName__like:
+            type: string
+            description: Match computer name partially (substring)
+            example: Lab1
+          tagsData:
+            type: string
+            description: >-
+              A JSON formatted string, where each key represents a tag key, and
+              each value represents a list of string values
+            example: '{"key1": ["value1_1", "value1_2"], "key2": ["value2"]}'
+          createdAt__between:
+            type: string
+            description: >-
+              Date range for creation time (format:
+              <from_timestamp>-<to_timestamp>, inclusive)
+            example: 1514978890136-1514978650130
+      data:
+        x-nullable: true
+        description: Data
+        type: object
+        properties: {}
+    required:
+      - filter
+ 
+paths:
+  /web/api/v2.1/agents:
+    get:
+      operationId: GetAgents
+      parameters:
+        - in: query
+          name: scanStatusesNin
+          required: false
+          collectionFormat: csv
+          type: array
+          maxItems: 5000
+          description: 'Not included scan statuses. Example: "started,aborted".'
+          items:
+            type: string
+            enum:
+              - none
+              - started
+              - aborted
+              - finished
+        - in: query
+          name: query
+          required: false
+          type: string
+          description: >-
+            A free-text search term, will match applicable attributes
+            (sub-string match). Note: Device's physical addresses will be
+            matched if they start with the search term only (no match if they
+            contain the term). Example: "Linux".
+        - in: query
+          name: decommissionedAt__gte
+          required: false
+          type: string
+          format: date-time
+          description: >-
+            Agents decommissioned after or at this timestamp. Example:
+            "2018-02-27T04:49:26.257525Z".
+        - in: query
+          name: awsSecurityGroups__contains
+          required: false
+          collectionFormat: csv
+          type: array
+          maxItems: 255
+          description: Free-text filter by aws securityGroups(supports multiple values)
+          items:
+            type: string
+            minLength: 2
+        - in: query
+          name: threatMitigationStatus
+          required: false
+          type: string
+          description: >-
+            Include only Agents that have threats with this mitigation status.
+            Example: "mitigated".
+          enum:
+            - mitigated
+            - blocked
+            - active
+            - suspicious
+            - pending
+            - suspicious_resolved
+        - in: query
+          name: registeredAt__lte
+          required: false
+          type: string
+          format: date-time
+          description: >-
+            Agents registered before or at this time. Example:
+            "2018-02-27T04:49:26.257525Z".
+        - in: query
+          name: updatedAt__gt
+          required: false
+          type: string
+          format: date-time
+          description: >-
+            Agents updated after this timestamp. Example:
+            "2018-02-27T04:49:26.257525Z".
+        - in: query
+          name: domains
+          required: false
+          collectionFormat: csv
+          type: array
+          maxItems: 5000
+          description: 'Included network domains. Example: "mybusiness.net,workgroup".'
+          items:
+            type: string
+        - in: query
+          name: networkQuarantineEnabled
+          required: false
+          collectionFormat: csv
+          type: array
+          maxItems: 5000
+          description: >-
+            The agents supports Network Quarantine Control and its enabled for
+            the agent's group
+          items:
+            type: boolean
+        - in: query
+          name: migrationStatus
+          required: false
+          type: string
+          enum:
+            - N/A
+            - Pending
+            - Migrated
+            - Failed
+          description: 'Migration status. Example: "N/A".'
+        - in: query
+          name: accountIds
+          required: false
+          collectionFormat: csv
+          type: array
+          minItems: 1
+          maxItems: 500
+          description: >-
+            List of Account IDs to filter by. Example:
+            "225494730938493804,225494730938493915".
+          items:
+            type: string
+        - in: query
+          name: ids
+          required: false
+          collectionFormat: csv
+          type: array
+          maxItems: 5000
+          description: >-
+            A list of Agent IDs. Example:
+            "225494730938493804,225494730938493915".
+          items:
+            type: string
+        - in: query
+          name: networkInterfaceInet__contains
+          required: false
+          collectionFormat: csv
+          type: array
+          maxItems: 10
+          description: >-
+            Free-text filter by local IP (supports multiple values). Example:
+            "192,10.0.0".
+          items:
+            type: string
+            minLength: 2
+        - in: query
+          name: agentVersionsNin
+          required: false
+          collectionFormat: csv
+          type: array
+          maxItems: 5000
+          description: 'Agent versions not to include. Example: "2.0.0.0,2.1.5.144".'
+          items:
+            type: string
+        - in: query
+          name: cloudProvider
+          required: false
+          collectionFormat: csv
+          type: array
+          maxItems: 5000
+          description: Agents from which cloud provider
+          items:
+            type: string
+        - in: query
+          name: sortOrder
+          required: false
+          type: string
+          default: null
+          x-nullable: true
+          description: 'Sort direction. Example: "asc".'
+          enum:
+            - asc
+            - desc
+        - in: query
+          name: osTypesNin
+          required: false
+          collectionFormat: csv
+          type: array
+          maxItems: 5000
+          description: 'Not included OS types. Example: "windows".'
+          items:
+            type: string
+            enum:
+              - windows
+              - windows_legacy
+              - linux
+              - macos
+        - in: query
+          name: installerTypesNin
+          required: false
+          collectionFormat: csv
+          type: array
+          maxItems: 5000
+          description: 'Exclude Agents installed with these package types. Example: ".msi".'
+          items:
+            type: string
+            enum:
+              - .msi
+              - .exe
+              - .deb
+              - .rpm
+              - .bsx
+              - .pkg
+              - .img
+              - unknown
+              - .tar
+              - .zip
+              - .gz
+              - .xz
+        - in: query
+          name: machineTypes
+          required: false
+          collectionFormat: csv
+          type: array
+          maxItems: 5000
+          description: 'Included machine types. Example: "laptop,desktop".'
+          items:
+            type: string
+            enum:
+              - unknown
+              - desktop
+              - laptop
+              - server
+              - kubernetes node
+              - storage
+        - in: query
+          name: encryptedApplications
+          required: false
+          type: boolean
+          description: Disk encryption status
+        - in: query
+          name: isPendingUninstall
+          required: false
+          type: boolean
+          description: Include only Agents with pending uninstall requests
+        - in: query
+          name: hasLocalConfiguration
+          required: false
+          type: boolean
+          description: Agent has a local configuration set
+        - in: query
+          name: isUpToDate
+          required: false
+          type: boolean
+          description: Include only Agents with updated software
+        - in: query
+          name: isDecommissioned
+          required: false
+          collectionFormat: csv
+          type: array
+          maxItems: 5000
+          description: 'Include active, decommissioned or both. Example: "True,False".'
+          items:
+            type: boolean
+        - in: query
+          name: computerName
+          required: false
+          type: string
+          description: 'Computer name. Example: "My Office Desktop".'
+        - in: query
+          name: lastLoggedInUserName__contains
+          required: false
+          collectionFormat: csv
+          type: array
+          maxItems: 10
+          description: >-
+            Free-text filter by username (supports multiple values). Example:
+            "admin,johnd1".
+          items:
+            type: string
+            minLength: 2
+        - in: query
+          name: appsVulnerabilityStatuses
+          required: false
+          collectionFormat: csv
+          type: array
+          maxItems: 5000
+          description: 'Apps vulnerability status in. Example: "patch_required".'
+          items:
+            type: string
+            enum:
+              - patch_required
+              - up_to_date
+              - not_applicable
+        - in: query
+          name: k8sVersion__contains
+          required: false
+          collectionFormat: csv
+          type: array
+          maxItems: 255
+          description: Free-text filter by K8s version (supports multiple values)
+          items:
+            type: string
+            minLength: 2
+        - in: query
+          name: firewallEnabled
+          required: false
+          collectionFormat: csv
+          type: array
+          maxItems: 5000
+          description: >-
+            The agents supports Firewall Control and it is enabled for the
+            agent's group
+          items:
+            type: boolean
+        - in: query
+          name: decommissionedAt__lt
+          required: false
+          type: string
+          format: date-time
+          description: >-
+            Agents decommissioned before this timestamp. Example:
+            "2018-02-27T04:49:26.257525Z".
+        - in: query
+          name: activeThreats
+          required: false
+          type: integer
+          format: int32
+          description: 'Include Agents with this amount of active threats. Example: "3".'
+        - in: query
+          name: awsSubnetIds__contains
+          required: false
+          collectionFormat: csv
+          type: array
+          maxItems: 255
+          description: Free-text filter by aws subnet ids (supports multiple values)
+          items:
+            type: string
+            minLength: 2
+        - in: query
+          name: createdAt__gte
+          required: false
+          type: string
+          format: date-time
+          description: >-
+            Agents created after or at this timestamp. Example:
+            "2018-02-27T04:49:26.257525Z".
+        - in: query
+          name: k8sNodeName__contains
+          required: false
+          collectionFormat: csv
+          type: array
+          maxItems: 255
+          description: Free-text filter by K8s node name (supports multiple values)
+          items:
+            type: string
+            minLength: 2
+        - in: query
+          name: totalMemory__gte
+          required: false
+          type: integer
+          format: int32
+          description: 'Memory size (MB, more than or equal)'
+        - in: query
+          name: machineTypesNin
+          required: false
+          collectionFormat: csv
+          type: array
+          maxItems: 5000
+          description: 'Not included machine types. Example: "laptop,desktop".'
+          items:
+            type: string
+            enum:
+              - unknown
+              - desktop
+              - laptop
+              - server
+              - kubernetes node
+              - storage
+        - in: query
+          name: lastActiveDate__between
+          required: false
+          type: string
+          description: >-
+            Date range for last active date(format:
+            <from_timestamp>-<to_timestamp>, inclusive). Example:
+            "1514978764288-1514978999999".
+        - in: query
+          name: networkInterfaceGatewayMacAddress__contains
+          required: false
+          collectionFormat: csv
+          type: array
+          maxItems: 10
+          description: >-
+            Free-text filter by Gateway MAC address (supports multiple values).
+            Example: "aa:0f,:41:".
+          items:
+            type: string
+            minLength: 2
+        - in: query
+          name: awsRole__contains
+          required: false
+          collectionFormat: csv
+          type: array
+          maxItems: 255
+          description: Free-text filter by aws role(supports multiple values)
+          items:
+            type: string
+            minLength: 2
+        - in: query
+          name: remoteProfilingStatesNin
+          required: false
+          collectionFormat: csv
+          type: array
+          maxItems: 5000
+          description: Do not include these Agent remote profiling states
+          items:
+            type: string
+        - in: query
+          name: lastActiveDate__lte
+          required: false
+          type: string
+          format: date-time
+          description: >-
+            Agents last active before or at this time. Example:
+            "2018-02-27T04:49:26.257525Z".
+        - in: query
+          name: createdAt__lte
+          required: false
+          type: string
+          format: date-time
+          description: >-
+            Agents created before or at this timestamp. Example:
+            "2018-02-27T04:49:26.257525Z".
+        - in: query
+          name: consoleMigrationStatusesNin
+          required: false
+          collectionFormat: csv
+          type: array
+          maxItems: 5000
+          description: 'Migration status nin. Example: "N/A".'
+          items:
+            type: string
+            enum:
+              - N/A
+              - Pending
+              - Migrated
+              - Failed
+        - in: query
+          name: sortBy
+          required: false
+          type: string
+          default: null
+          x-nullable: true
+          description: 'The column to sort the results by. Example: "id".'
+          enum:
+            - createdAt
+            - updatedAt
+            - id
+            - computerName
+            - groupId
+            - osType
+            - osName
+            - uuid
+            - scanStatus
+            - isDecommissioned
+            - decommissionedAt
+            - isUninstalled
+            - threatMitigationStatus
+            - threatResolved
+            - threatContentHash
+            - threatCreatedAt
+            - registeredAt
+            - lastActiveDate
+            - isActive
+            - isPendingUninstall
+            - activeThreats
+            - isUpToDate
+            - agentVersion
+            - osArch
+            - machineType
+            - networkStatus
+            - domain
+            - mitigationMode
+            - mitigationModeSuspicious
+            - encryptedApplications
+            - totalMemory
+            - cpuCount
+            - coreCount
+            - externalIp
+            - lastLoggedInUserName
+            - groupName
+            - networkInterfaceInet
+            - networkInterfacePhysical
+            - siteId
+            - siteName
+            - infected
+            - threatRebootRequired
+            - consoleMigrationStatus
+            - appsVulnerabilityStatus
+            - accountName
+            - externalId
+            - installerType
+            - rangerVersion
+            - operationalState
+            - remoteProfilingState
+            - networkQuarantineEnabled
+            - firewallEnabled
+            - locationEnabled
+            - cloudAccount
+            - cloudImage
+            - cloudInstanceId
+            - cloudInstanceSize
+            - cloudLocation
+            - cloudNetwork
+            - cloudProvider
+            - clusterName
+            - kubernetesVersion
+            - kubernetesType
+            - agentNamespace
+            - agentPodName
+            - serialNumber
+            - cpuId
+        - in: query
+          name: filteredSiteIds
+          required: false
+          collectionFormat: csv
+          type: array
+          maxItems: 5000
+          description: >-
+            List of Site IDs to filter by. Example:
+            "225494730938493804,225494730938493915".
+          items:
+            type: string
+        - in: query
+          name: adComputerName__contains
+          required: false
+          collectionFormat: csv
+          type: array
+          maxItems: 10
+          description: >-
+            Free-text filter by Active Directory computer name string (supports
+            multiple values). Example: "DC=sentinelone".
+          items:
+            type: string
+            minLength: 2
+        - in: query
+          name: registeredAt__gt
+          required: false
+          type: string
+          format: date-time
+          description: >-
+            Agents registered after this time. Example:
+            "2018-02-27T04:49:26.257525Z".
+        - in: query
+          name: cloudTags__contains
+          required: false
+          collectionFormat: csv
+          type: array
+          maxItems: 255
+          description: Free-text filter by cloud tags (supports multiple values)
+          items:
+            type: string
+            minLength: 2
+        - in: query
+          name: adUserQuery__contains
+          required: false
+          collectionFormat: csv
+          type: array
+          maxItems: 10
+          description: >-
+            Free-text filter by Active Directory computer name or its groups
+            (supports multiple values). Example: "DC=sentinelone,John".
+          items:
+            type: string
+            minLength: 2
+        - in: query
+          name: threatContentHash
+          required: false
+          type: string
+          description: >-
+            Include only Agents that have at least one threat with this content
+            hash. Example: "cf23df2207d99a74fbe169e3eba035e633b65d94".
+        - in: query
+          name: scanStatuses
+          required: false
+          collectionFormat: csv
+          type: array
+          maxItems: 5000
+          description: 'Included scan statuses. Example: "started,aborted".'
+          items:
+            type: string
+            enum:
+              - none
+              - started
+              - aborted
+              - finished
+        - in: query
+          name: operationalStatesNin
+          required: false
+          collectionFormat: csv
+          type: array
+          maxItems: 5000
+          description: Do not include these Agent operational states
+          items:
+            type: string
+        - in: query
+          name: threatRebootRequired
+          required: false
+          collectionFormat: csv
+          type: array
+          maxItems: 5000
+          description: >-
+            Has at least one threat with at least one mitigation action pending
+            reboot to succeed
+          items:
+            type: boolean
+        - in: query
+          name: isActive
+          required: false
+          type: boolean
+          description: Include only active Agents
+        - in: query
+          name: totalMemory__lt
+          required: false
+          type: integer
+          format: int32
+          description: 'Memory size (MB, less than)'
+        - in: query
+          name: adComputerQuery__contains
+          required: false
+          collectionFormat: csv
+          type: array
+          maxItems: 10
+          description: >-
+            Free-text filter by Active Directory computer name or its groups
+            (supports multiple values). Example: "DC=sentinelone,Windows".
+          items:
+            type: string
+            minLength: 2
+        - in: query
+          name: userActionsNeeded
+          required: false
+          collectionFormat: csv
+          type: array
+          maxItems: 5000
+          description: >-
+            Included pending user actions. Example:
+            "reboot_needed,upgrade_needed".
+          items:
+            type: string
+            enum:
+              - none
+              - reboot_needed
+              - user_action_needed
+              - upgrade_needed
+              - incompatible_os
+              - unprotected
+              - user_action_needed_fda
+              - user_action_needed_rs_fda
+              - user_action_needed_network
+              - rebootless_without_dynamic_detection
+              - extended_exclusions_partially_accepted
+              - user_action_needed_bluetooth_per
+              - reboot_category
+              - missing_permissions_category
+              - agent_suppressed_category
+              - incompatible_os_category
+              - unprotected_category
+        - in: query
+          name: updatedAt__between
+          required: false
+          type: string
+          description: >-
+            Date range for update time (format: <from_timestamp>-<to_timestamp>,
+            inclusive). Example: "1514978890136-1514978650130".
+        - in: query
+          name: cpuCount__gte
+          required: false
+          type: integer
+          format: int32
+          description: Number of CPUs (more than or equal)
+        - in: query
+          name: uuids
+          required: false
+          collectionFormat: csv
+          type: array
+          maxItems: 5000
+          description: >-
+            A list of included UUIDs. Example:
+            "ff819e70af13be381993075eb0ce5f2f6de05b11,ff819e70af13be381993075eb0ce5f2f6de05c22".
+          items:
+            type: string
+        - in: query
+          name: serialNumber__contains
+          required: false
+          collectionFormat: csv
+          type: array
+          maxItems: 255
+          description: Free-text filter by Serial Number (supports multiple values)
+          items:
+            type: string
+            minLength: 2
+        - in: query
+          name: registeredAt__between
+          required: false
+          type: string
+          description: >-
+            Date range for first registration time (format:
+            <from_timestamp>-<to_timestamp>, inclusive). Example:
+            "1514978764288-1514978999999".
+        - in: query
+          name: scanStatus
+          required: false
+          type: string
+          enum:
+            - none
+            - started
+            - aborted
+            - finished
+          description: 'Scan status. Example: "none".'
+        - in: query
+          name: externalId__contains
+          required: false
+          collectionFormat: csv
+          type: array
+          maxItems: 255
+          description: >-
+            Free-text filter by external ID (Customer ID). Example: "Tag#1 -
+            monitoring,Performance machine".
+          items:
+            type: string
+            minLength: 2
+        - in: query
+          name: totalMemory__lte
+          required: false
+          type: integer
+          format: int32
+          description: 'Memory size (MB, less than or equal)'
+        - in: query
+          name: countOnly
+          required: false
+          type: boolean
+          default: false
+          description: >-
+            If true, only total number of items will be returned, without any of
+            the actual objects.
+        - in: query
+          name: locationIds
+          required: false
+          collectionFormat: csv
+          type: array
+          maxItems: 5000
+          description: >-
+            Include only Agents reporting these locations. Example:
+            "225494730938493804,225494730938493915".
+          items:
+            type: string
+        - in: query
+          name: cloudNetwork__contains
+          required: false
+          collectionFormat: csv
+          type: array
+          maxItems: 255
+          description: Free-text filter by cloud network (supports multiple values)
+          items:
+            type: string
+            minLength: 2
+        - in: query
+          name: azureResourceGroup__contains
+          required: false
+          collectionFormat: csv
+          type: array
+          maxItems: 255
+          description: Free-text filter by azure resource group(supports multiple values)
+          items:
+            type: string
+            minLength: 2
+        - in: query
+          name: coreCount__between
+          required: false
+          type: string
+          description: 'Possible number of CPU cores (inclusive). Example: "2-8".'
+        - in: query
+          name: isUninstalled
+          required: false
+          collectionFormat: csv
+          type: array
+          maxItems: 5000
+          description: 'Include installed, uninstalled or both. Example: "True,False".'
+          items:
+            type: boolean
+        - in: query
+          name: filterId
+          required: false
+          type: string
+          description: >-
+            Include all Agents matching this saved filter. Example:
+            "225494730938493804".
+        - in: query
+          name: cpuId__contains
+          required: false
+          collectionFormat: csv
+          type: array
+          maxItems: 255
+          description: >-
+            Free-text filter by CPU name (supports multiple values). Example:
+            "Intel,AMD".
+          items:
+            type: string
+            minLength: 2
+        - in: query
+          name: k8sType__contains
+          required: false
+          collectionFormat: csv
+          type: array
+          maxItems: 255
+          description: Free-text filter by K8s type(supports multiple values)
+          items:
+            type: string
+            minLength: 2
+        - in: query
+          name: cloudProviderNin
+          required: false
+          collectionFormat: csv
+          type: array
+          maxItems: 5000
+          description: Exclude Agents from these cloud provider
+          items:
+            type: string
+        - in: query
+          name: mitigationMode
+          required: false
+          type: string
+          description: 'Agent mitigation mode policy. Example: "detect".'
+          enum:
+            - detect
+            - protect
+        - in: query
+          name: cloudAccount__contains
+          required: false
+          collectionFormat: csv
+          type: array
+          maxItems: 255
+          description: Free-text filter by cloud account (supports multiple values)
+          items:
+            type: string
+            minLength: 2
+        - in: query
+          name: adComputerMember__contains
+          required: false
+          collectionFormat: csv
+          type: array
+          maxItems: 10
+          description: >-
+            Free-text filter by Active Directory computer groups string
+            (supports multiple values). Example: "DC=sentinelone".
+          items:
+            type: string
+            minLength: 2
+        - in: query
+          name: consoleMigrationStatuses
+          required: false
+          collectionFormat: csv
+          type: array
+          maxItems: 5000
+          description: 'Migration status in. Example: "N/A".'
+          items:
+            type: string
+            enum:
+              - N/A
+              - Pending
+              - Migrated
+              - Failed
+        - in: query
+          name: lastActiveDate__gt
+          required: false
+          type: string
+          format: date-time
+          description: >-
+            Agents last active after this time. Example:
+            "2018-02-27T04:49:26.257525Z".
+        - in: query
+          name: osArch
+          required: false
+          type: string
+          description: 'OS architecture. Example: "32 bit".'
+          enum:
+            - 32 bit
+            - 64 bit
+        - in: query
+          name: agentContentUpdateId__contains
+          required: false
+          collectionFormat: csv
+          type: array
+          maxItems: 255
+          description: Free-text filter by content update ID (supports multiple values)
+          items:
+            type: string
+            minLength: 2
+        - in: query
+          name: registeredAt__gte
+          required: false
+          type: string
+          format: date-time
+          description: >-
+            Agents registered after or at this time. Example:
+            "2018-02-27T04:49:26.257525Z".
+        - in: query
+          name: coreCount__gt
+          required: false
+          type: integer
+          format: int32
+          description: CPU cores (more than)
+        - in: query
+          name: cpuCount__lte
+          required: false
+          type: integer
+          format: int32
+          description: Number of CPUs (less than or equal)
+        - in: query
+          name: agentPodName__contains
+          required: false
+          collectionFormat: csv
+          type: array
+          maxItems: 255
+          description: Free-text filter by agent pod name (supports multiple values)
+          items:
+            type: string
+            minLength: 2
+        - in: query
+          name: limit
+          required: false
+          type: integer
+          format: int32
+          default: 10
+          minimum: 1
+          maximum: 1000
+          description: 'Limit number of returned items (1-1000). Example: "10".'
+        - in: query
+          name: decommissionedAt__between
+          required: false
+          type: string
+          description: >-
+            Date range for decommission time (format:
+            <from_timestamp>-<to_timestamp>, inclusive). Example:
+            "1514978890136-1514978650130".
+        - in: query
+          name: threatCreatedAt__lt
+          required: false
+          type: string
+          format: date-time
+          description: >-
+            Agents with threats reported before this time. Example:
+            "2018-02-27T04:49:26.257525Z".
+        - in: query
+          name: coreCount__gte
+          required: false
+          type: integer
+          format: int32
+          description: CPU cores (more than or equal)
+        - in: query
+          name: clusterName__contains
+          required: false
+          collectionFormat: csv
+          type: array
+          maxItems: 255
+          description: Free-text filter by cluster name (supports multiple values)
+          items:
+            type: string
+            minLength: 2
+        - in: query
+          name: cpuCount__gt
+          required: false
+          type: integer
+          format: int32
+          description: Number of CPUs (more than)
+        - in: query
+          name: adQuery__contains
+          required: false
+          collectionFormat: csv
+          type: array
+          maxItems: 10
+          description: >-
+            Free-text filter by Active Directory string (supports multiple
+            values). Example: "DC=sentinelone".
+          items:
+            type: string
+            minLength: 2
+        - in: query
+          name: rangerVersions
+          required: false
+          collectionFormat: csv
+          type: array
+          maxItems: 5000
+          description: 'Ranger versions to include. Example: "2.0.0.0,2.1.5.144".'
+          items:
+            type: string
+        - in: query
+          name: userActionsNeededNin
+          required: false
+          collectionFormat: csv
+          type: array
+          maxItems: 5000
+          description: >-
+            Excluded pending user actions. Example:
+            "reboot_needed,upgrade_needed".
+          items:
+            type: string
+            enum:
+              - none
+              - reboot_needed
+              - user_action_needed
+              - upgrade_needed
+              - incompatible_os
+              - unprotected
+              - user_action_needed_fda
+              - user_action_needed_rs_fda
+              - user_action_needed_network
+              - rebootless_without_dynamic_detection
+              - extended_exclusions_partially_accepted
+              - user_action_needed_bluetooth_per
+              - reboot_category
+              - missing_permissions_category
+              - agent_suppressed_category
+              - incompatible_os_category
+              - unprotected_category
+        - in: query
+          name: threatCreatedAt__gt
+          required: false
+          type: string
+          format: date-time
+          description: >-
+            Agents with threats reported after this time. Example:
+            "2018-02-27T04:49:26.257525Z".
+        - in: query
+          name: cloudInstanceSize__contains
+          required: false
+          collectionFormat: csv
+          type: array
+          maxItems: 255
+          description: Free-text filter by cloud instance size(supports multiple values)
+          items:
+            type: string
+            minLength: 2
+        - in: query
+          name: adQuery
+          required: false
+          type: string
+          description: >-
+            An Active Directory query string. Example:
+            "CN=Managers,DC=sentinelone,DC=com".
+        - in: query
+          name: externalIp__contains
+          required: false
+          collectionFormat: csv
+          type: array
+          maxItems: 10
+          description: >-
+            Free-text filter by visible IP (supports multiple values). Example:
+            "205,127.0".
+          items:
+            type: string
+            minLength: 2
+        - in: query
+          name: locationEnabled
+          required: false
+          collectionFormat: csv
+          type: array
+          maxItems: 5000
+          description: >-
+            The agents supports Location Awareness and it is enabled for the
+            agent's group
+          items:
+            type: boolean
+        - in: query
+          name: totalMemory__gt
+          required: false
+          type: integer
+          format: int32
+          description: 'Memory size (MB, more than)'
+        - in: query
+          name: gatewayIp
+          required: false
+          type: string
+          description: 'Gateway ip. Example: "192.168.0.1".'
+        - in: query
+          name: registeredAt__lt
+          required: false
+          type: string
+          format: date-time
+          description: >-
+            Agents registered before this time. Example:
+            "2018-02-27T04:49:26.257525Z".
+        - in: query
+          name: agentVersions
+          required: false
+          collectionFormat: csv
+          type: array
+          maxItems: 5000
+          description: 'Agent versions to include. Example: "2.0.0.0,2.1.5.144".'
+          items:
+            type: string
+        - in: query
+          name: installerTypes
+          required: false
+          collectionFormat: csv
+          type: array
+          maxItems: 5000
+          description: >-
+            Include only Agents installed with these package types. Example:
+            ".msi".
+          items:
+            type: string
+            enum:
+              - .msi
+              - .exe
+              - .deb
+              - .rpm
+              - .bsx
+              - .pkg
+              - .img
+              - unknown
+              - .tar
+              - .zip
+              - .gz
+              - .xz
+        - in: query
+          name: coreCount__lte
+          required: false
+          type: integer
+          format: int32
+          description: CPU cores (less than or equal)
+        - in: query
+          name: cursor
+          required: false
+          type: string
+          default: null
+          x-nullable: true
+          description: >-
+            Cursor position returned by the last request. Use to iterate over
+            more than 1000 items. Example: "YWdlbnRfaWQ6NTgwMjkzODE=".
+        - in: query
+          name: totalMemory__between
+          required: false
+          type: string
+          description: 'Total memory range (GB, inclusive). Example: "4-8".'
+        - in: query
+          name: lastActiveDate__gte
+          required: false
+          type: string
+          format: date-time
+          description: >-
+            Agents last active after or at this time. Example:
+            "2018-02-27T04:49:26.257525Z".
+        - in: query
+          name: computerName__contains
+          required: false
+          collectionFormat: csv
+          type: array
+          maxItems: 10
+          description: >-
+            Free-text filter by computer name (supports multiple values).
+            Example: "john-office,WIN".
+          items:
+            type: string
+            minLength: 2
+        - in: query
+          name: locationIdsNin
+          required: false
+          collectionFormat: csv
+          type: array
+          maxItems: 5000
+          description: >-
+            Do not include only Agents reporting these locations. Example:
+            "225494730938493804,225494730938493915".
+          items:
+            type: string
+        - in: query
+          name: threatCreatedAt__lte
+          required: false
+          type: string
+          format: date-time
+          description: >-
+            Agents with threats reported before or at this time. Example:
+            "2018-02-27T04:49:26.257525Z".
+        - in: query
+          name: hasTags
+          required: false
+          type: boolean
+          description: Include only Agents that have tags
+        - in: query
+          name: updatedAt__gte
+          required: false
+          type: string
+          format: date-time
+          description: >-
+            Agents updated after or at this timestamp. Example:
+            "2018-02-27T04:49:26.257525Z".
+        - in: query
+          name: threatResolved
+          required: false
+          type: boolean
+          description: Include only Agents with at least one resolved threat
+        - in: query
+          name: decommissionedAt__gt
+          required: false
+          type: string
+          format: date-time
+          description: >-
+            Agents decommissioned after this timestamp. Example:
+            "2018-02-27T04:49:26.257525Z".
+        - in: query
+          name: threatHidden
+          required: false
+          type: boolean
+          description: Include only Agents with at least one hidden threat
+        - in: query
+          name: infected
+          required: false
+          type: boolean
+          description: Include only Agents with at least one active threat
+        - in: query
+          name: uuid__contains
+          required: false
+          collectionFormat: csv
+          type: array
+          maxItems: 10
+          description: >-
+            Free-text filter by Agent UUID (supports multiple values). Example:
+            "e92-01928,b055".
+          items:
+            type: string
+            minLength: 2
+        - in: query
+          name: networkStatusesNin
+          required: false
+          collectionFormat: csv
+          type: array
+          maxItems: 5000
+          description: 'Included network statuses. Example: "connected,connecting".'
+          items:
+            type: string
+            enum:
+              - connected
+              - disconnected
+              - connecting
+              - disconnecting
+        - in: query
+          name: cloudImage__contains
+          required: false
+          collectionFormat: csv
+          type: array
+          maxItems: 255
+          description: Free-text filter by cloud image (supports multiple values)
+          items:
+            type: string
+            minLength: 2
+        - in: query
+          name: siteIds
+          required: false
+          collectionFormat: csv
+          type: array
+          minItems: 1
+          maxItems: 500
+          description: >-
+            List of Site IDs to filter by. Example:
+            "225494730938493804,225494730938493915".
+          items:
+            type: string
+        - in: query
+          name: rangerStatus
+          required: false
+          type: string
+          description: '[DEPRECATED] Use rangerStatuses. Example: "NotApplicable".'
+          enum:
+            - NotApplicable
+            - Enabled
+            - Disabled
+        - in: query
+          name: domainsNin
+          required: false
+          collectionFormat: csv
+          type: array
+          maxItems: 5000
+          description: 'Not included network domains. Example: "mybusiness.net,workgroup".'
+          items:
+            type: string
+        - in: query
+          name: threatCreatedAt__gte
+          required: false
+          type: string
+          format: date-time
+          description: >-
+            Agents with threats reported after or at this time. Example:
+            "2018-02-27T04:49:26.257525Z".
+        - in: query
+          name: csvFilterId
+          required: false
+          type: string
+          description: 'The ID of the CSV file to filter by. Example: "225494730938493804".'
+        - in: query
+          name: adUserName__contains
+          required: false
+          collectionFormat: csv
+          type: array
+          maxItems: 10
+          description: >-
+            Free-text filter by Active Directory username string (supports
+            multiple values). Example: "DC=sentinelone".
+          items:
+            type: string
+            minLength: 2
+        - in: query
+          name: appsVulnerabilityStatusesNin
+          required: false
+          collectionFormat: csv
+          type: array
+          maxItems: 5000
+          description: 'Apps vulnerability status nin. Example: "patch_required".'
+          items:
+            type: string
+            enum:
+              - patch_required
+              - up_to_date
+              - not_applicable
+        - in: query
+          name: uuid
+          required: false
+          type: string
+          description: >-
+            Agent's universally unique identifier. Example:
+            "ff819e70af13be381993075eb0ce5f2f6de05be2".
+        - in: query
+          name: coreCount__lt
+          required: false
+          type: integer
+          format: int32
+          description: CPU cores (less than)
+        - in: query
+          name: skip
+          required: false
+          type: integer
+          format: int32
+          default: null
+          x-nullable: true
+          minimum: 0
+          maximum: 1000
+          description: >-
+            Skip first number of items (0-1000). To iterate over more than 1000
+            items,  use "cursor". Example: "150".
+        - in: query
+          name: mitigationModeSuspicious
+          required: false
+          type: string
+          description: 'Mitigation mode policy for suspicious activity. Example: "detect".'
+          enum:
+            - detect
+            - protect
+        - in: query
+          name: rangerStatusesNin
+          required: false
+          collectionFormat: csv
+          type: array
+          maxItems: 5000
+          description: 'Do not include these Ranger Statuses. Example: "NotApplicable".'
+          items:
+            type: string
+            enum:
+              - NotApplicable
+              - Enabled
+              - Disabled
+        - in: query
+          name: createdAt__gt
+          required: false
+          type: string
+          format: date-time
+          description: >-
+            Agents created after this timestamp. Example:
+            "2018-02-27T04:49:26.257525Z".
+        - in: query
+          name: rangerVersionsNin
+          required: false
+          collectionFormat: csv
+          type: array
+          maxItems: 5000
+          description: 'Ranger versions not to include. Example: "2.0.0.0,2.1.5.144".'
+          items:
+            type: string
+        - in: query
+          name: filteredGroupIds
+          required: false
+          collectionFormat: csv
+          type: array
+          maxItems: 5000
+          description: >-
+            List of Group IDs to filter by. Example:
+            "225494730938493804,225494730938493915".
+          items:
+            type: string
+        - in: query
+          name: decommissionedAt__lte
+          required: false
+          type: string
+          format: date-time
+          description: >-
+            Agents decommissioned before this timestamp. Example:
+            "2018-02-27T04:49:26.257525Z".
+        - in: query
+          name: operationalStates
+          required: false
+          collectionFormat: csv
+          type: array
+          maxItems: 5000
+          description: Agent operational state
+          items:
+            type: string
+        - in: query
+          name: osVersion__contains
+          required: false
+          collectionFormat: csv
+          type: array
+          maxItems: 10
+          description: >-
+            Free-text filter by OS full name and version (supports multiple
+            values). Example: "Service Pack 1".
+          items:
+            type: string
+            minLength: 2
+        - in: query
+          name: updatedAt__lte
+          required: false
+          type: string
+          format: date-time
+          description: >-
+            Agents updated before or at this timestamp. Example:
+            "2018-02-27T04:49:26.257525Z".
+        - in: query
+          name: updatedAt__lt
+          required: false
+          type: string
+          format: date-time
+          description: >-
+            Agents updated before this timestamp. Example:
+            "2018-02-27T04:49:26.257525Z".
+        - in: query
+          name: k8sNodeLabels__contains
+          required: false
+          collectionFormat: csv
+          type: array
+          maxItems: 255
+          description: Free-text filter by K8s node labels (supports multiple values)
+          items:
+            type: string
+            minLength: 2
+        - in: query
+          name: adUserMember__contains
+          required: false
+          collectionFormat: csv
+          type: array
+          maxItems: 10
+          description: >-
+            Free-text filter by Active Directory user groups string (supports
+            multiple values). Example: "DC=sentinelone".
+          items:
+            type: string
+            minLength: 2
+        - in: query
+          name: cloudLocation__contains
+          required: false
+          collectionFormat: csv
+          type: array
+          maxItems: 255
+          description: Free-text filter by cloud location (supports multiple values)
+          items:
+            type: string
+            minLength: 2
+        - in: query
+          name: networkStatuses
+          required: false
+          collectionFormat: csv
+          type: array
+          maxItems: 5000
+          description: 'Included network statuses. Example: "connected,connecting".'
+          items:
+            type: string
+            enum:
+              - connected
+              - disconnected
+              - connecting
+              - disconnecting
+        - in: query
+          name: remoteProfilingStates
+          required: false
+          collectionFormat: csv
+          type: array
+          maxItems: 5000
+          description: Agent remote profiling state
+          items:
+            type: string
+        - in: query
+          name: networkInterfacePhysical__contains
+          required: false
+          collectionFormat: csv
+          type: array
+          maxItems: 10
+          description: >-
+            Free-text filter by MAC address (supports multiple values). Example:
+            "aa:0f,:41:".
+          items:
+            type: string
+            minLength: 2
+        - in: query
+          name: agentNamespace__contains
+          required: false
+          collectionFormat: csv
+          type: array
+          maxItems: 255
+          description: Free-text filter by agent namespace (supports multiple values)
+          items:
+            type: string
+            minLength: 2
+        - in: query
+          name: rangerStatuses
+          required: false
+          collectionFormat: csv
+          type: array
+          maxItems: 5000
+          description: 'Status of Ranger. Example: "NotApplicable".'
+          items:
+            type: string
+            enum:
+              - NotApplicable
+              - Enabled
+              - Disabled
+        - in: query
+          name: skipCount
+          required: false
+          type: boolean
+          default: null
+          x-nullable: true
+          description: >-
+            If true, total number of items will not be calculated, which speeds
+            up execution time.
+        - in: query
+          name: activeThreats__gt
+          required: false
+          type: integer
+          format: int32
+          description: >-
+            Include Agents with at least this amount of active threats. Example:
+            "5".
+        - in: query
+          name: lastActiveDate__lt
+          required: false
+          type: string
+          format: date-time
+          description: >-
+            Agents last active before this time. Example:
+            "2018-02-27T04:49:26.257525Z".
+        - in: query
+          name: cloudInstanceId__contains
+          required: false
+          collectionFormat: csv
+          type: array
+          maxItems: 255
+          description: Free-text filter by cloud instance id(supports multiple values)
+          items:
+            type: string
+            minLength: 2
+        - in: query
+          name: createdAt__lt
+          required: false
+          type: string
+          format: date-time
+          description: >-
+            Agents created before this timestamp. Example:
+            "2018-02-27T04:49:26.257525Z".
+        - in: query
+          name: cpuCount__between
+          required: false
+          type: string
+          description: 'Possible number of CPU cores (inclusive). Example: "2-8".'
+        - in: query
+          name: gcpServiceAccount__contains
+          required: false
+          collectionFormat: csv
+          type: array
+          maxItems: 255
+          description: Free-text filter by gcp service account (supports multiple values)
+          items:
+            type: string
+            minLength: 2
+        - in: query
+          name: threatCreatedAt__between
+          required: false
+          type: string
+          description: >-
+            Agents with threats reported in a date range (format:
+            <from_timestamp>-<to_timestamp>, inclusive). Example:
+            "1514978764288-1514978999999".
+        - in: query
+          name: osTypes
+          required: false
+          collectionFormat: csv
+          type: array
+          maxItems: 5000
+          description: 'Included OS types. Example: "windows".'
+          items:
+            type: string
+            enum:
+              - windows
+              - windows_legacy
+              - linux
+              - macos
+        - in: query
+          name: cpuCount__lt
+          required: false
+          type: integer
+          format: int32
+          description: Number of CPUs (less than)
+        - in: query
+          name: groupIds
+          required: false
+          collectionFormat: csv
+          type: array
+          minItems: 1
+          maxItems: 500
+          description: >-
+            List of Group IDs to filter by. Example:
+            "225494730938493804,225494730938493915".
+          items:
+            type: string
+        - in: query
+          name: computerName__like
+          required: false
+          type: string
+          description: 'Match computer name partially (substring). Example: "Lab1".'
+        - in: query
+          name: tagsData
+          required: false
+          type: string
+          description: >-
+            A JSON formatted string, where each key represents a tag key, and
+            each value represents a list of string values. Example: "{"key1":
+            ["value1_1", "value1_2"], "key2": ["value2"]}".
+        - in: query
+          name: createdAt__between
+          required: false
+          type: string
+          description: >-
+            Date range for creation time (format:
+            <from_timestamp>-<to_timestamp>, inclusive). Example:
+            "1514978890136-1514978650130".
+      responses:
+        '200':
+          description: Success
+          schema:
+            $ref: '#/definitions/agents.schemas_AgentViewSchema_many_200'
+        '400':
+          description: >-
+            Invalid user input received. See error details for further
+            information.
+          schema:
+            $ref: '#/definitions/_NoDataSchema_400'
+        '401':
+          description: Unauthorized access - please sign in and retry.
+          schema:
+            $ref: '#/definitions/_NoDataSchema_401'     
+      tags:
+        - Agents
+      produces:
+        - application/json
+      description: >-
+        Get the Agents, and their data, that match the filter. This command
+        gives the Agent ID, which you can use in other commands. To save the
+        list and data to a CSV file, use "export/agents".
+      summary: Get Agents
+  /web/api/v2.1/agents/actions/disconnect:
+    post:
+      operationId: DisconnectAgents
+      parameters:
+        - in: body
+          name: body
+          schema:
+            $ref: '#/definitions/agents.schemas_AgentsDangerousActionSchema'
+      responses:
+        '200':
+          description: Success
+          schema:
+            $ref: '#/definitions/_AffectedResultsSchema_200'
+        '400':
+          description: >-
+            Invalid user input received. See error details for further
+            information.
+          schema:
+            $ref: '#/definitions/_NoDataSchema_400'
+        '401':
+          description: Unauthorized access - please sign in and retry.
+          schema:
+            $ref: '#/definitions/_NoDataSchema_401'
+        '403':
+          description: User has insufficient permissions to perform the requested action
+          schema:
+            $ref: '#/definitions/_NoDataSchema_403'
+      tags:
+        - Agent Actions
+      produces:
+        - application/json
+      description: >-
+        Use this command to isolate (quarantine) endpoints from the network, if
+        the endpoints match the filter. <BR>The Agent can communicate with the
+        Management, which lets you analyze and mitigate threats. Best practice:
+        For Active threats that spread, apply "Disconnect from network"
+        immediately. In the policy, you can set this is to be automatic. When
+        the Agent detects a high-confidence malicious threat, it will mitigate
+        the threat (on Protect) with the action set by the policy. Then the
+        Agent will immediately quarantine the endpoint. To make Disconnect from
+        network automatic in an Account policy, run the "accounts/{id} command
+        (see "Update Account") with: "networkQuarantine":true. 
+      summary: Disconnect from Network
+      consumes:
+        - application/json
+  /web/api/v2.1/agents/actions/connect:
+    post:
+      operationId: ConnectAgents
+      parameters:
+        - in: body
+          name: body
+          schema:
+            $ref: '#/definitions/agents.schemas_AgentsActionSchema'
+      responses:
+        '200':
+          description: Success
+          schema:
+            $ref: '#/definitions/_AffectedResultsSchema_200'
+        '400':
+          description: >-
+            Invalid user input received. See error details for further
+            information.
+          schema:
+            $ref: '#/definitions/_NoDataSchema_400'
+        '401':
+          description: Unauthorized access - please sign in and retry.
+          schema:
+            $ref: '#/definitions/_NoDataSchema_401'
+        '403':
+          description: User has insufficient permissions to perform the requested action
+          schema:
+            $ref: '#/definitions/_NoDataSchema_403'
+      tags:
+        - Agent Actions
+      produces:
+        - application/json
+      description: >-
+        After you run "disconnect from network" on endpoints, analyze the issue,
+        and mitigate threats. Use this command to reconnect to the network all
+        endpoints that match the filter. To learn more, see "Disconnect from
+        Network". 
+      summary: Connect to Network
+      consumes:
+        - application/json
+  
